@@ -8,7 +8,7 @@ Francisco Parreno, Ramón Álvarez-Valdés and Consuelo Parreno-Torres
 
 We used -fopenmp and standard c++ and CPLEX
 
-The makefile is for CPLEX 12.8, if you have a recent version, change that lines in the makefile and the libraries
+The makefile is for CPLEX 20.1, if you have a recent version, change that lines in the makefile and the libraries
 
 You should put all the files in the same folder than the makefile. 
 
