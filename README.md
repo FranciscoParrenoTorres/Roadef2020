@@ -21,7 +21,11 @@ https://www.roadef.org/challenge/2020/en/finalSubmission.php
 Options in the script. 
 
 #!/bin/bash 
+
 #SBATCH -c 2 --mem=16GB
+
 #SBATCH --ntasks=1
+
 #SBATCH --cpus-per-task=2
+
 export OMP_NUM_THREADS=4
