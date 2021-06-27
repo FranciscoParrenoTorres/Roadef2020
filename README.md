@@ -16,7 +16,7 @@ If you want to use, use the standard parameters of the challenge are indicated i
 
 https://www.roadef.org/challenge/2020/en/finalSubmission.php
 
-
+You can also see the solutions of the set C
 
 Options in the script. 
 
