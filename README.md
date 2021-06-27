@@ -1,6 +1,6 @@
 # Roadef2020
 
-Source Code Team 56 Roadef 2020
+Source Code Team 56 Roadef 2020 in the folder Source
 
 Universidad de Castilla-La Mancha Universidad de Valencia
 
@@ -16,7 +16,7 @@ If you want to use, use the standard parameters of the challenge are indicated i
 
 https://www.roadef.org/challenge/2020/en/finalSubmission.php
 
-You can also see the solutions of the set C
+You can also see the solutions of the set C in the folder Solutions
 
 Options in the script. 
 
