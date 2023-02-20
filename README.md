@@ -6,9 +6,9 @@ Universidad de Castilla-La Mancha Universidad de Valencia
 
 Francisco Parreno, Ramón Álvarez-Valdés and Consuelo Parreno-Torres
 
-We used -fopenmp and standard c++ and CPLEX
+We used -fopenmp and standard c++ and GUROBI
 
-The makefile is for CPLEX 20.1, if you have a recent version, change that lines in the makefile and the libraries
+The makefile is for GUROBI 10.01, if you have a recent version, change that lines in the makefile and the libraries
 
 You should put all the files in the same folder than the makefile. 
 
