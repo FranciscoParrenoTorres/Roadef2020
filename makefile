@@ -4,8 +4,10 @@ CFLAGS  =  -W"switch" -W"no-deprecated-declarations" -W"empty-body" -W"conversio
 
 
 CXX          = g++
-LDFLAGS      = -O3 -DIL_STD -fthreadsafe-statics -flto -Wswitch -Wno-deprecated-declarations -Wempty-body -Wconversion -Wreturn-type -Wparentheses -Wno-pointer-sign -Wno-format -Wuninitialized -Wunreachable-code -Wunused-function -Wunused-value -Wunused-variable -Wsign-compare -std=c++11 -funroll-all-loops -Wall -fno-strict-aliasing -I /opt/ibm/ILOG/CPLEX_Studio201/concert/include -I /opt/ibm/ILOG/CPLEX_Studio201/cplex/include -g2 -gdwarf-2 
-LIBS 	    = -fPIC -lilocplex -lconcert -lcplex -lm -lpthread -ldl -fopenmp -L /opt/ibm/ILOG/CPLEX_Studio201/concert/lib/x86-64_linux/static_pic -L /opt/ibm/ILOG/CPLEX_Studio201/cplex/lib/x86-64_linux/static_pic
+LDFLAGS      = -O3 -DIL_STD -fthreadsafe-statics -flto -Wswitch -Wno-deprecated-declarations -Wempty-body -Wconversion -Wreturn-type -Wparentheses -Wno-pointer-sign -Wno-format -Wuninitialized -Wunreachable-code -Wunused-function -Wunused-value -Wunused-variable -Wsign-compare -std=c++11 -funroll-all-loops -Wall -fno-strict-aliasing -I /opt/gurobi912/linux64/include -I /opt/ibm/ILOG/CPLEX_Studio128/concert/include -I /opt/ibm/ILOG/CPLEX_Studio128/cplex/include -g2 -gdwarf-2 
+LIBS 	    = -fpermissive -fPIC -lilocplex -lconcert -lcplex -lm -lpthread -ldl -fopenmp -L /opt/ibm/ILOG/CPLEX_Studio128/concert/lib/x86-64_linux/static_pic -L /opt/ibm/ILOG/CPLEX_Studio128/cplex/lib/x86-64_linux/static_pic  -L /opt/gurobi1001/linux64/lib  -lgurobi_g++5.2 -lgurobi100 -lpthread
+
+
 
 
 
