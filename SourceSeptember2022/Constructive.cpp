@@ -8,7 +8,7 @@
 
 using namespace std;
 
-//extern set<int> M_distintos_Global;
+
 
 bool Maintenance::comp_descending1(int i, int j)
 {
@@ -144,283 +144,7 @@ void Maintenance::VND(double &val)
 	} while (mejora == true && M_VND == true && time_vnd < (M_Total_Time));
 //	} while (mejora == true && M_VND == true);
 }*/
-double Maintenance::MejoraIntercambiosEjectionMejorada(int tipo)
-{
-	bool Cambio = false;
-	bool Algun_Cambio = false;
-	bool Intensification = M_Intensification;
-	double fobjAntiguo = FuncionObjetivoTemp();
-	if (fobjAntiguo <= M_Best_fo + __FLT_EPSILON__)
-		M_Intensification = true;
-	bool busqueda = M_Busqueda_Local;
-	M_Busqueda_Local = false;
-	if (tipo == 1)
-	{
-		ComputeExcessTemp();
-	}
-	struct timeb t1;
-	ftime(&t1);
-	double	time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
 
-	do
-	{
-		Cambio = false;
-		Algun_Cambio = false;
-		//ordenadas por la de mayor exceso en sus te
-		if (tipo==1)
-			sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(), [&](size_t i, size_t j) { return ((M_Interventions[i].Get_Excess_temp()) > (M_Interventions[j].Get_Excess_temp())); });
-		else
-		{
-			//ordenada por las de mayor diferencia entres su riesgo mínimo y acumulado
-			tipo == 0;
-			sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
-			     [&](size_t i, size_t j) {
-				     return ((M_Interventions[i].Get_RiskC(M_I_T[i]) -
-				              M_Interventions[i].Get_Min_Risk()) >
-				             (M_Interventions[j].Get_RiskC(M_I_T[j]) -
-				              M_Interventions[i].Get_Min_Risk()));
-			     });
-		}
-
-
-
-
-
-		ftime(&t1);
-		time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-		for (int index = 0; index < ((M_N_Interventions - 1)) && (Algun_Cambio != true || M_Busqueda_Local) && time_v1<M_Total_Time; index++)
-		{
-				if (!M_Fase_Intensification && get_random(0, 1) <= 0) continue;
-	
-			Cambio = false;
-			int inter = M_Interventions_Dif[index];
-			int t_inter = M_I_T[inter];
-			int t_interf = M_Interventions[inter].Get_T_F_Temp();
-			if (!M_Fase_Intensification && index>(M_N_Interventions/2))
-				break;
-			//Si puedo quitarla por recurso por abajo
-			if (!PuedoQuitar(inter, t_inter)) continue;
-			//Quito lo de la función objetvio
-			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
-			M_fo_temp -= fobj1;
-			M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
-			//Quito los escenarios, etc.
-			SubtractScenarios(inter);
-			//Calcula el nuevo t con los escenarios
-			FuncionObjetivoTemp(M_Interventions[inter].Get_T_Temp(), M_Interventions[inter].Get_T_F_Temp());
-			//Quito recursos
-			QuitarRecursos(inter);
-			M_I_T[inter] = -1;
-			M_Interventions_Colocada[inter] = false;
-			
-			for (int index2 = index + 1; index2 < M_N_Interventions && Cambio != true && time_v1<M_Total_Time; index2++)
-			{
-				if (!M_Fase_Intensification && get_random(0, 1) <= 0) continue;
-				if (!M_Fase_Intensification && index2>(M_N_Interventions/2))
-				break;
-				int inter2 = M_Interventions_Dif[index2];
-				int t_inter2 = M_I_T[inter2];
-				int t_inter2f = M_Interventions[inter2].Get_T_F_Temp();
-				if (!PuedoQuitar(inter2, t_inter2)) continue;
-				double fobj2 = M_Interventions[inter2].Get_RiskC(t_inter2);
-				//Quito lo de la función objetvio
-				M_fo_temp -= fobj2;
-				M_Min_fo_temp += M_Interventions[inter2].Get_Min_Risk();
-
-				SubtractScenarios(inter2);
-				FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
-
-				//Quito recursos
-				QuitarRecursos(inter2);
-				M_I_T[inter2] = -1;
-				M_Interventions_Colocada[inter2] = false;
-				int cont2 = 0;
-				int Cuantos = 10;
-				if (M_Fase_Intensification) Cuantos = M_T;
-//				printf("Cambio la  Intervention %d y %d\n", index, index2);
-				for (vector<int> ::iterator itt2 = M_Interventions[inter2].Get_T_Ordenados_Risk().begin(); itt2 != M_Interventions[inter2].Get_T_Ordenados_Risk().end() && Cambio != true && cont2 < Cuantos && time_v1<M_Total_Time; itt2++)
-				{
-
-					//donde estaba
-					if (t_inter2 == (*itt2))
-						continue;
-					int timeini2 = (*itt2);
-					int timef2 = timeini2 + M_Interventions[inter2].Get_Delta(timeini2);
-					M_fo_temp += M_Interventions[inter2].Get_RiskC(timeini2);
-					M_Min_fo_temp -= M_Interventions[inter2].Get_Min_Risk();
-					if ((M_Alpha * (M_fo_temp / (double)M_T)) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
-					{
-						M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
-						M_Min_fo_temp +=
-						    M_Interventions[inter2].Get_Min_Risk();
-						break;
-					}
-					if (PuedoColocar(inter2, timeini2))
-					{
-						cont2++;
-
-						int timefin2 = timeini2 + M_Interventions[inter2].Get_Delta(timeini2);
-						//Añado los nuevos escenarios
-						AddScenarios(inter2, timeini2, timefin2);
-						if (M_Pool) CopyFO2_2();
-						//Calculo la nueva función objetivo metiendo esa intervención
-						double fobj_prev = FuncionObjetivoTemp( timeini2, timefin2);
-						//Añado recursos
-						M_Interventions[inter2].Set_T_Temp(timeini2);
-						AddRecursos(inter2);
-						M_I_T[inter2] = timeini2;
-						M_I_Seasons[inter2] = M_T_Season[timeini2];
-						M_Interventions_Colocada[inter2] = true;
-						int cont = 0;
-						//Si ya metiendo solamente esa es peor la función objetivo 
-						//la quito, estaría quitando soluciones que se podrían mejorar
-						if ((fobj_prev) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
-						{
-							break;
-						}
-						for (vector<int> ::iterator itt = M_Interventions[inter].Get_T_Ordenados_Risk().begin(); itt != M_Interventions[inter].Get_T_Ordenados_Risk().end() && Cambio != true && cont < Cuantos; itt++)
-						{
-
-
-							if (t_inter == (*itt))
-								continue;
-							int timeini = (*itt);
-							int timef = timeini + M_Interventions[inter].Get_Delta(timeini);
-							//Una no está dónde estaba la otra nada
-							if ((timeini2 >= t_interf || timef2 <= t_inter) && (timeini >= t_inter2f || timef <= t_inter2))
-								continue;
-							M_fo_temp += M_Interventions[inter].Get_RiskC(timeini);
-							M_Min_fo_temp -=
-							    M_Interventions[inter].Get_Min_Risk();
-							//Ahora le sumo lo de la nueva
-							double partial = fobj_prev + (M_Alpha * (M_Interventions[inter].Get_RiskC(timeini) / (double)M_T));
-							if ((partial) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
-							{
-								M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-								M_Min_fo_temp +=
-								    M_Interventions[inter]
-								        .Get_Min_Risk();
-								break;
-							}
-							if (PuedoColocar(inter, timeini))
-							{
-								cont++;
-//								printf("Hilo %d Cambio la  Intervention %d que estaba en %d y la %d que estaba en %d por las posiciones %d %d\n",M_Hilo, index,t_inter, index2,t_inter2,timeini,timeini2);
-								int timefin = timeini + M_Interventions[inter].Get_Delta(timeini);
-								if (M_Pool)  CopyFO2();
-								AddScenarios(inter, timeini, timefin);
-
-								double fobjNew = FuncionObjetivoTemp(timeini, timefin);
-
-								if (fobjNew < (fobjAntiguo -  M_Min_Improve) || (fobjNew < (M_Best_fo - __FLT_EPSILON__)))
-								{
-
-									M_I_T[inter] = timeini;
-									M_I_Seasons[inter] = M_T_Season[timeini];
-									M_Interventions[inter].Set_T_Temp(timeini);
-									M_Interventions_Colocada[inter] = true;
-									AddRecursos(inter);
-									fobjAntiguo = fobjNew;
-									Cambio = true;
-									Algun_Cambio = true;
-									ActualizarMejorSolution(fobjNew, 5);
-								}
-								else
-								{
-									M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-									M_Min_fo_temp +=
-									    M_Interventions[inter]
-									        .Get_Min_Risk();
-									if (M_Pool)  CopyBackFO2();
-									SubtractScenarios(inter, timeini, timefin);
-								}
-
-							}
-							else
-							{
-								M_fo_temp -=
-								    M_Interventions[inter]
-								        .Get_RiskC(timeini);
-								M_Min_fo_temp +=
-								    M_Interventions[inter]
-								        .Get_Min_Risk();
-							}
-
-						}
-						if (Cambio != true)
-						{
-							M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
-							M_Min_fo_temp +=
-							    M_Interventions[inter2].Get_Min_Risk();
-							SubtractScenarios(inter2, timeini2, timefin2);
-							if (M_Pool) CopyBackFO2_2();
-//							FuncionObjetivoTemp(timeini2, timefin2);
-
-							QuitarRecursos(inter2);
-							M_Interventions[inter2].Set_T_Temp(t_inter2);
-							M_Interventions_Colocada[inter2] = true;
-							M_I_T[inter2] = t_inter2;
-							M_I_Seasons[inter2] = M_T_Season[t_inter2];
-							//							cout << "quitar11 " << inter2 << " Time " << timeini2 << endl;
-
-						}
-
-
-					}
-					else
-					{
-						M_fo_temp -=
-						    M_Interventions[inter2].Get_RiskC(timeini2);
-						M_Min_fo_temp +=
-						    M_Interventions[inter2].Get_Min_Risk();
-					}
-
-						ftime(&t1);
-						time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-
-				}
-				if (Cambio != true)
-				{
-					AddRecursos(inter2);
-					M_fo_temp += fobj2;
-					M_Min_fo_temp -= M_Interventions[inter2].Get_Min_Risk();
-					M_Interventions_Colocada[inter2] = true;
-					M_I_T[inter2] = t_inter2;
-					AddScenarios(inter2);
-					FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
-
-				}
-				ftime(&t1);
-				time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-
-			}
-
-
-			if (Cambio != true)
-			{
-				AddRecursos(inter);
-				M_fo_temp += fobj1;
-				M_Min_fo_temp -= M_Interventions[inter].Get_Min_Risk();
-				M_Interventions_Colocada[inter] = true;
-				M_I_T[inter] = t_inter;
-				AddScenarios(inter);
-				FuncionObjetivoTemp(M_Interventions[inter].Get_T_Temp(), M_Interventions[inter].Get_T_F_Temp());
-
-				//				cout << "add " << inter << " Time " << t_inter << endl;
-			}
-			ftime(&t1);
-			time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-		}
-
-	}while (Algun_Cambio == true && M_Busqueda_Local && time_v1<M_Total_Time);
-		M_Busqueda_Local = busqueda;
-		M_Intensification = Intensification;
-	return fobjAntiguo;
-}
 double Maintenance::VND(double& val)
 {
 	//	printf("\n %d", M_Iter);
@@ -454,7 +178,6 @@ double Maintenance::VND(double& val)
 			M_distintos.insert(hash_operator(M_I_T));
 			if (ndistintos == M_distintos.size())
 				break;
-			
 			mejora = false;
 			val_inicial = val;
 			struct timeb t1;
@@ -571,13 +294,11 @@ double Maintenance::VND(double& val)
 			if (time_vnd > M_Total_Time)
 				break;
 			//			printf("Aquí 3 %d", M_Iter);
-/*			if (M_Fase_Intensification && (M_VMejora5 < 10 || val_inicial < (1.001* M_Best_fo ) || (M_VMejora5 * get_random(0, 100) < (M_Mejora5 + 1) * 500)))
+/*			if (M_VMejora5 < 10 || val_inicial < (1.001* M_Best_fo ) || (M_VMejora5 * get_random(0, 100) < (M_Mejora5 + 1) * 500))
 			{
 				M_VMejora5++;
-				int solucion = RepararCplex(val_inicial);
-				double val = FuncionObjetivoTemp();
-
-				if (solucion==1 && val < (val_inicial - __FLT_EPSILON__) && M_VND == true)
+				val = MejoraQuitarT(val_inicial);
+				if (val < (val_inicial - __FLT_EPSILON__) && M_VND == true)
 				{
 					if (!silent) printf("%.5f 5 %d\n", val, M_Iter);
 					M_Mejora5++;
@@ -587,7 +308,7 @@ double Maintenance::VND(double& val)
 					continue;
 				}
 			}
-	*/		
+			*/
 			//			printf("Aquí 4 %d", M_Iter);
 			/*			if (M_VMejora5 < 10 || val_inicial < (M_Best_fo + 0.5) || (M_VMejora5 * get_random(0, 100) < (M_Mejora5 + 1) * 500))
 						{
@@ -673,7 +394,6 @@ double Maintenance::VND2(double& val)
 	bool mejora = false;
 	double val_inicial = val;
 	double val_ini2 = val;
-	double val_inicial_fijo = val;
 	double time_vnd = 0;
 	bool silent = M_Challenge_Mode;
 	bool Best_solution = false;
@@ -695,7 +415,6 @@ double Maintenance::VND2(double& val)
 			M_distintos.insert(hash_operator(M_I_T));
 			if (ndistintos == M_distintos.size())
 				break;
-
 			mejora = false;
 			val_inicial = val;
 			struct timeb t1;
@@ -714,14 +433,7 @@ double Maintenance::VND2(double& val)
 			//		printf("Aquí 0 %d", M_Iter);
 			val = MejoraQuitar(val_inicial);
 			//		val = MejoraQuitar(val_inicial);
-/*			if (M_Fase_Intensification)
-			{
-				if (val >= (val_inicial_fijo - __FLT_EPSILON__))
-				{
-					printf("No la mejora");
-					break;
-				}
-			}*/
+
 			if (val < (val_inicial - __FLT_EPSILON__) && M_VND == true)
 			{
 				//				if (!silent) printf("%.5f 2 %d\n", val, M_Iter);
@@ -955,7 +667,7 @@ void Maintenance::GRASP()
 		*/
 
 //		if (no_sol>10 && Sol_finished == false && M_Best_I_T.size()==0)
-		if ((no_sol > -1 || M_Best_I_T.size()==0) && Sol_finished == false )
+		if ((no_sol > 3 || M_Best_I_T.size()==0) && Sol_finished == false )
 		{
 				no_sol = 0;
 			M_Sin_Terminar_Tipo[M_Tipo]++;
@@ -1533,15 +1245,11 @@ double Maintenance::TerminarSolutionCopy(double val)
 	bool siguiente_tipo = false;
 	int telegido = -1;
 	Copy2(false);
-//	VerifySolution();
+	VerifySolution();
 //	printf("Entra ");
-	int Cuantos = 6;
-	if (M_Fase_Intensification) Cuantos = 26;
-	for (int type = 0; type < Cuantos; type++)
+	for (int type = 0; type < 10; type++)
 	{
-		M_Tipo = type%6+10;
-//		if (M_Tipo == 11)
-//			continue;
+		M_Tipo = type%5+10;
 		siguiente_tipo = false;
 		do
 		{
@@ -1567,7 +1275,7 @@ double Maintenance::TerminarSolutionCopy(double val)
 //			printf("Entra 3");
 			ColocarIEnTiempo(choose, telegido);
 //			printf("Sale 3 ");
-			if ((M_Alpha * ((M_fo_temp+M_Min_fo_temp) / (double)M_T) + (1 - M_Alpha) * (M_fo2_temp / (double)M_T)) > (val_inicio - __FLT_EPSILON__))
+			if ((M_Alpha * (M_fo_temp / (double)M_T) + (1 - M_Alpha) * (M_fo2_temp / (double)M_T)) > (val_inicio - __FLT_EPSILON__))
 			{
 				telegido = -1;
 				break;
@@ -1777,7 +1485,6 @@ int Maintenance::ElegirMayor(int type)
 int Maintenance::ElegirMayorAbsoluto(int type)
 {
 	double Max = -1.0;
-	double Min = __FLT_MAX__;
 	int elegido = -1;
 	for (int k = 0; k < M_N_Interventions; k++)
 	{
@@ -1822,21 +1529,12 @@ int Maintenance::ElegirMayorAbsoluto(int type)
 		}
 		if (type == 14)
 		{
-			if (M_Interventions[i].Get_T_Ordenados_Risk_Temp().size() < Min)
-			{
-				Min = M_Interventions[i].Get_Exclusions().size();
-				elegido = i;
-			}
-		}
-		if (type == 15)
-		{
 			if (M_Interventions[i].Get_Exclusions().size() > Max)
 			{
 				Max = M_Interventions[i].Get_Exclusions().size();
 				elegido = i;
 			}
 		}
-
 	}
 	return elegido;
 
@@ -2049,38 +1747,6 @@ int Maintenance::ElegirMayorAleatorizadoSPG(int type)
 	}
 	return elegido;
 }
-int Maintenance::ElegirMenorRecursos(void)
-{
-	double Min_T = M_T;
-	double Max = -1;
-	int elegido = -1;
-	for (int k = 0; k < M_N_Interventions; k++)
-	{
-		int indice = M_Vec_Alea_I[k];
-		if (M_Interventions_Colocada[indice] == true)
-			continue;
-		if (M_Interventions[indice].Get_T_Ordenados_Risk_Temp().size() == 0)
-			continue;
-		if (M_Interventions[indice].Get_T_Ordenados_Risk_Temp().size() > Min_T)
-			continue;
-		if (M_Interventions[indice].Get_T_Ordenados_Risk_Temp().size() < Min_T)
-		{
-			Min_T = M_Interventions[indice].Get_T_Ordenados_Risk_Temp().size();
-			Max = M_Interventions[indice].Get_Min_Workload();
-			elegido = indice;
-
-		}
-		if ((M_Interventions[indice].Get_T_Ordenados_Risk_Temp().size() == Min_T) && (M_Interventions[indice].Get_Min_Workload() > (Max))) 
-		{
-			if (elegido == (-1) || get_random(0, 2) >= 1)
-			{
-				Max = M_Interventions[indice].Get_Min_Workload();
-				elegido = indice;
-			}
-		}
-	}
-	return elegido;
-}
 int Maintenance::ElegirMayorAleatorizado(int type)
 {
 	double Max = -1;
@@ -2195,7 +1861,6 @@ bool Maintenance::ActualizarMejorSolution(double val,int lugar)
 {
 //	return false;
 	if (val <= __FLT_EPSILON__) return false;
-	PoolGoodSolutions(M_I_T, val);
 	if (val < M_Best_fo - __FLT_EPSILON__)
 	{
 
@@ -2220,22 +1885,7 @@ bool Maintenance::ActualizarMejorSolution(double val,int lugar)
 		M_Best_fo_2= (1 - M_Alpha) * (M_fo2_temp / (double)M_T);
 		CalcularSumasT(M_BestT_Suma);
 //		Global_Best_Objective_Function = M_Best_fo;
-		if (!M_Challenge_Mode)
-		{
-			printf("\n %.5f Iter %d Tipo %d Lugar   ", M_Best_fo, M_Iter, M_Tipo);
-			if (lugar == 2) printf(" MejorT\n");
-			else
-
-				if (lugar == 3) printf(" Quitar\n");
-				else
-					if (lugar == 4) printf(" DosI\n");
-					else
-						if (lugar == 5) printf(" Ejections\n");
-						else
-							if (lugar == 6) printf(" Cplex\n");
-							else printf(" %d", lugar);
-			
-		}
+		if (!M_Challenge_Mode) printf("\n %.5f Iter %d Tipo %d Lugar %d\n  ", M_Best_fo, M_Iter, M_Tipo, lugar);
 //		cout << endl<< M_Best_fo << " Iter "<< M_Iter << " Tipo "<< M_Tipo<<" Lugar "<<lugar<<endl;
 //		EjecutarValidadorPython();
 		
@@ -2289,7 +1939,6 @@ bool Maintenance::CompararDosSumasT(vector<bool> &Cambios,vector<double>& SumaT1
 	bool alguno = false;
 	for (register int i = 0; i < M_T; i++)
 	{
-
 		if (SumaT1[i] < SumaT2[i] - __FLT_EPSILON__)
 		{
 			Cambios[i] = true;
@@ -2302,9 +1951,7 @@ bool Maintenance::CompararDosSumasT(vector<bool> &Cambios,vector<double>& SumaT1
 			alguno = true;
 			continue;
 		}
-
 		Cambios[i] = false;
-
 	}
 	return alguno;
 }
@@ -2742,7 +2389,7 @@ double Maintenance::MejoraIntercambiosMejorT()
 //		for (int ki = 0; ki < M_T; ki++) M_T_M1[ki] = true;
 		Cambio = false;
 		Algun_Cambio = false;
-		if (M_Pool == false || get_random(0, 1) <= 1)
+		if (M_Pool == false || get_random(0, 1) == 0)
 		{
 				//if (get_random(0, 4) >= 1)
 				//	sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
@@ -2769,8 +2416,6 @@ double Maintenance::MejoraIntercambiosMejorT()
 
 		for (int index = 0; index < (M_N_Interventions) && (Algun_Cambio != true || M_Busqueda_Local==true) && time_v1<M_Total_Time; index++)
 		{
-//			if (!M_Fase_Intensification) if (get_random(0, 1) == 0) continue;
-
 			Cambio = false;
 			//		for (list<pair<int, int>>::iterator it = M_I_T_Solution.begin(); it != M_I_T_Solution.end() && Cambio != true; it++)
 			//		{
@@ -2790,13 +2435,12 @@ double Maintenance::MejoraIntercambiosMejorT()
 			//			int inter = (*it).first;
 			//			int t_inter = (*it).second;
 
-			if (M_Pool == false && M_Fase_Intensification==false && M_Interventions[inter].Get_RiskC(t_inter) < (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__))
+			if (M_Pool == false && M_Interventions[inter].Get_RiskC(t_inter) < (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__))
 				continue;
 
 			if (!PuedoQuitar(inter, t_inter)) continue;
 			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 			M_fo_temp -= fobj1;
-			M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 			bool CambiaTOrigen = HaCambiadoT(t_inter, M_Interventions[inter].Get_Delta(t_inter), M_T_M1);
 			bool primero_entra = false;
 			//Recorro en orden de los iniciales
@@ -2811,17 +2455,14 @@ double Maintenance::MejoraIntercambiosMejorT()
 					continue;
 
 				M_fo_temp += M_Interventions[inter].Get_RiskC(timeini);
-				M_Min_fo_temp -= M_Interventions[inter].Get_Min_Risk();
 				if ((M_Alpha * (M_fo_temp / (double)M_T)) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
 				{
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-					M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 					break;
 				}
 				if (M_Pool == false && M_Interventions[inter].Get_RiskC(timeini) > (M_Interventions[inter].Get_RiskC(t_inter) - __FLT_EPSILON__))
 				{
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-					M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 					break;
 
 				}
@@ -2868,7 +2509,7 @@ double Maintenance::MejoraIntercambiosMejorT()
 						AddRecursos(inter);
 						Cambio = true;
 						Algun_Cambio = true;
-						ActualizarMejorSolution(fobjNew, 2);
+						ActualizarMejorSolution(fobjNew, 3);
 						best_Move = fobjNew;
 						fobjAntiguo = fobjNew;
 						CompararDosSumasT(M_T_M1, M_T_M1_Suma, M_BestT_Suma);
@@ -2876,8 +2517,6 @@ double Maintenance::MejoraIntercambiosMejorT()
 					else
 					{
 						M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-						M_Min_fo_temp +=
-						    M_Interventions[inter].Get_Min_Risk();
 						SubtractScenarios(inter, timeini, timefin);
 						/*						for (int t3 = timeini; t3 < timefin; t3++)
 												{
@@ -2893,10 +2532,8 @@ double Maintenance::MejoraIntercambiosMejorT()
 
 				}
 				else
-				{
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-					M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
-				}
+
 				ftime(&t1);
 				time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
 
@@ -2905,7 +2542,6 @@ double Maintenance::MejoraIntercambiosMejorT()
 			if (Cambio != true)
 			{
 				M_fo_temp += fobj1;
-				M_Min_fo_temp -= M_Interventions[inter].Get_Min_Risk();
 				if (primero_entra == true)
 				{
 					AddRecursos(inter);
@@ -3056,7 +2692,6 @@ double Maintenance::MejoraQuitar(double fobjAntiguo)
 //					continue;
 			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 			M_fo_temp -= fobj1;
-			M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 			//Quito lo de la función objetvio
 			SubtractScenarios(inter);
 
@@ -3461,24 +3096,21 @@ double Maintenance::DestruirCplex(double fobjAntiguo)
 
 
 
-int Maintenance::RepararCplex(double fobjAntiguo)
+double Maintenance::RepararCplex(double fobjAntiguo)
 {
 	int tipo = get_random(0, 2);
 	bool Cambio = false;
 	M_Reparar = true;
 	//Total variables sin exclusiones
 	timeb t1;
-	int Porcentaje = 90;
+	int Porcentaje = 50;
 	int PorcentajeBuenas = 90;
-	if (M_Best_I_T.size() == 0 || fobjAntiguo<0)
+	if (M_Best_I_T.size() == 0)
 	{
-		Porcentaje = 90;
-		PorcentajeBuenas = 90;
+		Porcentaje = 10;
+		PorcentajeBuenas = 10;
 	}
 	int PorcentajeFin = (double)(M_Iter - M_No_Sol) * (double)100 / (double)(M_Iter + 1);
-	PorcentajeFin = 50;
-	if (M_Fase_Intensification) PorcentajeFin = 86;
-	if (M_Best_I_T.size() == 0) PorcentajeFin = 50;
 	if (!M_Challenge_Mode)
 		printf("Reparar Hilo %d Iter %d\n", M_Hilo, M_Iter);
 	//	if (tipo == 2)
@@ -3542,7 +3174,6 @@ int Maintenance::RepararCplex(double fobjAntiguo)
 	//					continue;
 				double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 				M_fo_temp -= fobj1;
-				M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 				//Quito lo de la función objetvio
 				SubtractScenarios(inter);
 
@@ -3561,25 +3192,16 @@ int Maintenance::RepararCplex(double fobjAntiguo)
 		ftime(&t1);
 		time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
 		M_Time_Modelo = M_Total_Time- time_v1;
-		M_Time_Modelo = 2;
+
 		if (M_Time_Modelo > 0)
 		{
-			double fobjNueva = 0;
-			if (M_Cplex==true)
 			double fobjNueva = IntegerFormulationPartial(0);
-			else
-			double fobjNueva = IntegerFormulationGRB(0);
-
 			if (fobjNueva > 0)
 			{
 				ActualizarMejorSolution(fobjNueva, 6);
 
 				stop = true;
-				if (M_Fase_Intensification)
-				fobjNueva =VND(fobjNueva);
-				else
 				fobjNueva = MejoraQuitar(fobjNueva);
-
 			}
 
 		}
@@ -3587,8 +3209,7 @@ int Maintenance::RepararCplex(double fobjAntiguo)
 		{
 
 			CopyBack(false);
-			Porcentaje -= 5;
-			if (!M_Fase_Intensification) Porcentaje -= 5;
+			Porcentaje -= 10;
 
 		}
 
@@ -3600,13 +3221,8 @@ int Maintenance::RepararCplex(double fobjAntiguo)
 	} while (stop == false && M_NI_Colocadas>0 && time_v1<M_Total_Time && ((Porcentaje>PorcentajeFin)|| (M_Best_I_T.size() == 0 && Porcentaje>-5)));
 	if (!M_Challenge_Mode)
 		printf("Reparar Hilo %d Iter %d Reparada %d\n", M_Hilo, M_Iter,stop);
-	if (M_NI_Colocadas == M_N_Interventions)
-	{
-		FuncionObjetivoTemp();
-		VerifySolution();
-	}
-
-	M_Reparar = false;
+	FuncionObjetivoTemp();
+	VerifySolution();
 	return stop;
 }
 
@@ -3670,7 +3286,6 @@ double Maintenance::MejoraQuitarCplex(double fobjAntiguo)
 //					continue;
 			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 			M_fo_temp -= fobj1;
-			M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 			//Quito lo de la función objetvio
 			SubtractScenarios(inter);
 
@@ -3770,7 +3385,6 @@ double Maintenance::MejoraQuitarF2(int Type)
 //					continue;
 				double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 				M_fo_temp -= fobj1;
-				M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 				//Quito lo de la función objetvio
 				for (int t = M_Interventions[inter].Get_T_Temp(); t < M_Interventions[inter].Get_T_F_Temp(); t++)
 				{
@@ -3858,7 +3472,7 @@ bool Maintenance::MejoraIntercambiosFo1Fast()
 //					continue;
 			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 			M_fo_temp -= fobj1;
-			M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
+
 			//Quito lo de la función objetvio
 			for (int t = M_Interventions[inter].Get_T_Temp(); t < M_Interventions[inter].Get_T_F_Temp(); t++)
 			{
@@ -3881,13 +3495,11 @@ bool Maintenance::MejoraIntercambiosFo1Fast()
 				if ((M_Alpha * (M_fo_temp / (double)M_T)) > fobjAntiguo)
 				{
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-					M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 					continue;
 				}
 				if (M_Pool == false && M_Interventions[inter].Get_RiskC(timeini) > (M_Interventions[inter].Get_RiskC(t_inter) - __FLT_EPSILON__))
 				{
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-					M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
 					continue;
 				}
 				if (PuedoColocar(inter, timeini))
@@ -4366,7 +3978,7 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 				//Vamos probando para ir cambiando a donde se pueda mejorar
 		//		for (int t0 = 0; t0 < M_T && Cambio != true && M_vfo2_temp[M_Ivfo2_temp[t0]]>0; t0++)
 //		if (get_random(0,1)==0)
-		if (M_Pool == false || get_random(0, 3) <= 2)
+		if (M_Pool == false || get_random(0, 1) == 0)
 		{
 			//if (get_random(0, 4) >= 1)
 			//	sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
@@ -4382,12 +3994,7 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 		else
 		{
 			ComputeExcessTemp();
-//			if (!M_Fase_Intensification)
 			sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(), [&](size_t i, size_t j) { return ((M_Interventions[i].Get_Excess_temp()) > (M_Interventions[j].Get_Excess_temp())); });
-//			else
-//					sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
-//					[&](size_t i, size_t j) { return (M_Interventions[i].Get_RiskC(M_I_T[i]) > M_Interventions[j].Get_RiskC(M_I_T[j])); });
-
 		}
 		struct timeb t1;
 		ftime(&t1);
@@ -4395,23 +4002,15 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 
 		for (int index = 0; index < ((M_N_Interventions - 1)) && (Algun_Cambio != true || M_Busqueda_Local) && time_v1 < M_Total_Time; index++)
 		{
-//		if (!M_Fase_Intensification) if (get_random(0, 1) == 0) continue;
-		
 			Cambio = false;
 			int inter = M_Interventions_Dif[index];
 			int t_inter = M_I_T[inter];
 //			int t_interf = M_Interventions[inter].Get_T_F_Temp();
-
-			if (!M_Fase_Intensification && index > (M_N_Interventions / 2))
-				break;
-			if (M_Pool == false && M_Fase_Intensification == false &&
-			    M_Interventions[inter].Get_RiskC(t_inter) <
-			        (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__))
+			if (M_Pool == false && M_Interventions[inter].Get_RiskC(t_inter) < (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__))
 				continue;
 			if (!PuedoQuitar(inter, t_inter)) continue;
 			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 			M_fo_temp -= fobj1;
-
 			//Quito lo de la función objetvio
 			SubtractScenarios(inter);
 			FuncionObjetivoTemp(M_Interventions[inter].Get_T_Temp(), M_Interventions[inter].Get_T_F_Temp());
@@ -4429,7 +4028,6 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 //					int kk = 9;
 				int t_inter2 = M_I_T[inter2];
 //				int t_inter2f = M_Interventions[inter2].Get_T_F_Temp();
-				//Si ninguna se cambia a un sitio donde haya cambmiado algo
 				if (CambiaTOrigen == false && HaCambiadoT(t_inter2, M_Interventions[inter2].Get_Delta(t_inter2), M_T_M2) == false)
 					continue;
 				int timeini2 = t_inter;
@@ -4443,33 +4041,25 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 					continue;
 				double fobj2 = M_Interventions[inter2].Get_RiskC(t_inter2);
 				M_fo_temp -= fobj2;
-
 				M_fo_temp += M_Interventions[inter].Get_RiskC(timeini);
 				M_fo_temp += M_Interventions[inter2].Get_RiskC(timeini2);
-
 				if ((M_Alpha * (M_fo_temp / (double)M_T)) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
 				{
 
 					M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
 					M_fo_temp += fobj2;
-
 					continue;
 				}
 				//Quito lo de la función objetvio
 				SubtractScenarios(inter2);
-				//14/09/2021
-//				FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
+				FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
 				//Quito recursos
 				QuitarRecursos(inter2);
 				M_I_T[inter2] = -1;
 				M_Interventions_Colocada[inter2] = false;
-				bool puede = false;
 				if (PuedoColocar(inter2, timeini2))
 				{
-					puede = true;
-					FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
-
 					int timefin2 = timeini2 + M_Interventions[inter2].Get_Delta(timeini2);
 					AddScenarios(inter2, timeini2, timefin2);
 					if (M_Pool) CopyFO2_2();
@@ -4530,12 +4120,11 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 					M_fo_temp += fobj2;
 					M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
 					M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-
 					M_Interventions_Colocada[inter2] = true;
 					M_I_T[inter2] = t_inter2;
 					AddRecursos(inter2);
 					AddScenarios(inter2);
-					if (puede==true)
+					
 					FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
 				}
 				//				VerifySolution();
@@ -4547,7 +4136,6 @@ double Maintenance::MejoraIntercambiosDosI(double val)
 			{
 				M_Interventions[inter].Set_T_Temp(t_inter);
 				M_fo_temp += fobj1;
-
 				M_Interventions_Colocada[inter] = true;
 				M_I_T[inter] = t_inter;
 				AddRecursos(inter);
@@ -4575,15 +4163,9 @@ void Maintenance::CrearListasFormulations()
 	struct timeb t0;
 	ftime(&t0);
 	double time = 0;
-	M_MinDistintosPool = 0.1 * M_N_Interventions;
-	//	return;
+//	return;
 //	M_Time_Modelo = min(1200, (M_Total_Time-(int)M_Time_Leer) / 2) / 3;
-	M_Time_Modelo = 2* M_Total_Time / 3;//6
-
-
-	//Changed 07/09/2021
-//	M_Time_Modelo = M_Total_Time / 12;
-
+	M_Time_Modelo = M_Total_Time / 6;//6
 //	M_Time_Modelo = 20;
 	M_Pool_Solutions = M_Pool;
 //	M_Time_Modelo = 0;
@@ -4596,7 +4178,7 @@ void Maintenance::CrearListasFormulations()
 	M_Formulacion_Cuantiles = false;
 	M_Max_Formulation = false;
 //	M_GapPool = 10;
-	M_Reparar = false;
+
 	if (M_Pool==false)
 	IntegerFormulation(1);
 	struct timeb t1;
@@ -4615,22 +4197,17 @@ void Maintenance::CrearListasFormulations()
 		//Si no ha conseguido nada antes 
 
 		M_Time_Modelo = tiempo_ini_modelo;
-
+		//Quito 22062021
+//		M_Pool_Solutions_Integer.clear();
+//		if (M_Pool_Solutions_Integer.size() == 0) M_Time_Modelo = 2 * M_Time_Modelo;
 		M_Time_Modelo = 2 * M_Time_Modelo;
-		if (M_Tipo_Formulation > 0)
-			M_Time_Modelo = 900;
-//		M_GapPool = 100 * M_GapPool;
-		if (M_Cplex==true)
-			IntegerFormulation(2);
-		else
-		{
-			if (M_Tipo_Formulation==0)
-			IntegerFormulationFullGRB_Reactive(2);
-			else
-				IntegerFormulationFullGRB(2);
-		}
-		ftime(&t2);
-		time = ((double)((t2.time - M_Time_Initial.time) * 1000 + t2.millitm - M_Time_Initial.millitm)) / 1000;
+		//esto es para que no está más de la mitad del tiempo aquí
+//		M_Time_Modelo = min((M_Total_Time / 2) - time, (double)M_Time_Modelo);
+		
+//		M_GapPool = get_random(1,5);
+		IntegerFormulation(2);
+			ftime(&t2);
+			time = ((double)((t2.time - M_Time_Initial.time) * 1000 + t2.millitm - M_Time_Initial.millitm)) / 1000;
 
 /*		if (M_Pool_Solutions_Integer.size() < (4*12 * M_Iter) && time<M_Total_Time/3)
 		 {
@@ -4711,17 +4288,13 @@ void Maintenance::CrearListasFormulations()
 //	M_Pool_Solutions_Lista.push_back();
 	bool alguna = false;
 	int lista = 0;
-	double cota = 0.01;
 	do
 	{
 		
 		alguna = false;
 		if (it != M_Pool_Solutions_Integer.rend() && time < M_Total_Time)
 		{
-			if ((*it).second > (M_Best_fo * (double)1.02))
-				continue;
 			alguna = true;
-
 			M_Pool_Solutions_Lista[lista].push_back((*it));
 
 			it++;
@@ -4730,10 +4303,7 @@ void Maintenance::CrearListasFormulations()
 		if (lista == M_Number_Threads) lista = 0;
 		if (it2 != M_Pool_Solutions_IntegerQuantiles.rend() && time < M_Total_Time)
 		{
-			if ((*it2).second > (M_Best_fo * (double)1.02))
-				continue;
 			alguna = true;
-
 			M_Pool_Solutions_Lista[lista].push_back((*it2));
 			it2++;
 			lista++;
@@ -4741,8 +4311,6 @@ void Maintenance::CrearListasFormulations()
 		if (lista == M_Number_Threads) lista = 0;
 		if (it3 != M_Pool_Solutions_IntegerMax.rend() && time < M_Total_Time)
 		{
-			if ((*it3).second > (M_Best_fo * (double)1.02))
-				continue;
 			alguna = true;
 			M_Pool_Solutions_Lista[lista].push_back((*it3));
 
@@ -4785,7 +4353,6 @@ void Maintenance::PoolGoodSolutions(vector<int> &solution, double value)
 {
 //	if (M_Fase_Intensification)
 //		return;
-
 	if (value< M_MinPoolSolutions)
 	{
 
@@ -4818,7 +4385,6 @@ void Maintenance::PoolGoodSolutions(vector<int> &solution, double value)
 					M_PoolGoodSolutionsD.erase(hash_operator(M_PoolGoodSolutions.back().first));
 					M_PoolGoodSolutions.pop_back();
 					M_MinPoolSolutions = M_PoolGoodSolutions.back().second;
-
 				}
 				return;
 			}
@@ -4830,67 +4396,11 @@ void Maintenance::PoolGoodSolutions(vector<int> &solution, double value)
 
 
 			M_PoolGoodSolutions.push_back(p);
-			if (M_PoolGoodSolutions.size() >= M_SizePoolSolutions)
-					M_MinPoolSolutions = M_PoolGoodSolutions.back().second;
-			return;
-		}
-
-	}
-	else if (M_fo2_temp< M_MinPoolSolutions_diver)
-	{
-		//	if (M_PoolGoodSolutions.size() >= M_SizePoolSolutions)
-		if (M_PoolGoodSolutions.size() < M_SizePoolSolutions) return;
-
-		bool metido=M_PoolGoodSolutions_diverD.insert(hash_operator(solution)).second;
-		if (metido == false) return;
-		bool distinta = true;
-		int distan = 0;
-		for (list<pair<vector<int>, double>> ::iterator it = M_PoolGoodSolutions_diver.begin(); distinta!=false && it != M_PoolGoodSolutions_diver.end(); it++)
-		{
-			distan = Distancia(solution, (*it).first);
-			if (distan < M_MinDistintosPool) 
-				distinta = false;
-		}
-	for (list<pair<vector<int>, double>> ::iterator it = M_PoolGoodSolutions.begin(); distinta!=false && it != M_PoolGoodSolutions.end(); it++)
-		{
-			distan = Distancia(solution, (*it).first);
-			if (distan < M_MinDistintosPool) 
-				distinta = false;
-		}
-		if (distinta == false)
-		{
-			M_PoolGoodSolutions_diverD.erase(hash_operator(solution));
-			return;
-		}
-
-		for (list<pair<vector<int>, double>> ::iterator it = M_PoolGoodSolutions_diver.begin(); it != M_PoolGoodSolutions_diver.end(); it++)
-		{
-			if ((M_fo2_temp) < ((*it).second - __FLT_EPSILON__))
-			{
-				M_PoolGoodSolutions_diverD.insert(hash_operator(solution));
-				pair<vector<int>, double> p(solution,M_fo2_temp);
-				M_PoolGoodSolutions_diver.insert(it, p);
-				if (M_PoolGoodSolutions_diver.size() > M_SizePoolSolutions)
-				{
-
-					M_PoolGoodSolutions_diverD.erase(hash_operator(M_PoolGoodSolutions_diver.back().first));
-					M_PoolGoodSolutions_diver.pop_back();
-					M_MinPoolSolutions_diver = M_PoolGoodSolutions_diver.back().second;
-				}
-				if (M_PoolGoodSolutions_diverD.size() > M_PoolGoodSolutions_diver.size())
-					int perro = 9;
-				return;
-			}
-		}
-
-		if (distinta==true && M_PoolGoodSolutions_diver.size() < M_SizePoolSolutions)
-		{
-			M_PoolGoodSolutions_diverD.insert(hash_operator(solution));
-			pair<vector<int>, double> p(solution, M_fo2_temp);
-			M_PoolGoodSolutions_diver.push_back(p);
-			return;
+			M_MinPoolSolutions = M_PoolGoodSolutions.back().second;
 		}
 	}
+
+
 }
 void Maintenance::QuitarNoVisitadas(set<int> &vec)
 {
@@ -4913,25 +4423,31 @@ void Maintenance::MejorarPoolSolutions2(int hilo)
 	bool alguna = false;
 	if (M_Pool_Solutions_Integer.size() > 0)
 		M_Encuentra_Solutions = true;
-	set<int> Temp = M_distintos;
 	if (M_Encuentra_Solutions)
 		it =M_Pool_Solutions_Integer.begin();
 	else
 		goto G_r_a_s_p;
 
 
-	int PoolSize = M_Pool_Solutions_Integer.size();
-	M_SizePoolSolutions = max(PoolSize/5,5);
-	M_MinDistintosPool = 0.2 * M_N_Interventions;
-	if (M_Lower_Resources)
-		M_Time_Intensification = M_Time_Intensification / 4;
-	M_Time_Intensification = 0;
+	M_Intensification = true;
+	if (M_Intensification)
+	{
+		M_Time_Intensification = M_Total_Time / 8;
+
+//		if (M_Iter)
+//		M_Intensification = 0;
+		int PoolSize = M_Pool_Solutions_Integer.size();
+		M_SizePoolSolutions = max(PoolSize/8,20);
+		if (M_Lower_Resources)
+			M_Time_Intensification = M_Time_Intensification / 4;
+	}
+	else
+		M_Time_Intensification = 0;
 	M_Iter = 0;
 	M_Total_Time = M_Total_Time - M_Time_Intensification;
 			M_VMejora1 = 0; M_VMejora2 = 0; M_VMejora3 = 0; M_VMejora4 = 0; M_VMejora5 = 0;
 		M_Mejora1 = 0; M_Mejora2 = 0; M_Mejora3 = 0; M_Mejora4 = 0; M_Mejora5 = 0;
 	        M_distintos.clear();
-
 	do
 	{
 		alguna = false;
@@ -4994,32 +4510,33 @@ void Maintenance::MejorarPoolSolutions2(int hilo)
 
 
 	} while (alguna == true && (time < M_Total_Time));
-	if (time < M_Total_Time)
+	//Tengo que borrar de M_Integer_Sol_Distintas las que no me haya dado tiempo a recorre
+/*	if (M_Encuentra_Solutions)
 	{
-		M_Total_Time = M_Total_Time + M_Time_Intensification;
-
+		//Las que no he revisado, las quito porque no me ha dado tiempo y quizás venga bien revisarlas
+		for (; it != M_Pool_Solutions_Integer.end(); it++)
+		{
+			M_No_Visitadas.insert(hash_operator((*it).first));
+		}
+	}*/
+	M_Total_Time = M_Total_Time + M_Time_Intensification;
+	if (M_Intensification)
+	{
+		set<int> Temp = M_distintos;
 
 		M_Fase_Intensification = true;
-//		M_VMejora1 = 0; M_VMejora2 = 0; M_VMejora3 = 0; M_VMejora4 = 0; M_VMejora5 = 0;
-//		M_Mejora1 = 0; M_Mejora2 = 0; M_Mejora3 = 0; M_Mejora4 = 0; M_Mejora5 = 0;
+		M_VMejora1 = 0; M_VMejora2 = 0; M_VMejora3 = 0; M_VMejora4 = 0; M_VMejora5 = 0;
+		M_Mejora1 = 0; M_Mejora2 = 0; M_Mejora3 = 0; M_Mejora4 = 0; M_Mejora5 = 0;
 		int tempIter = M_Iter;
 		M_Iter = 0;
-		int cont_intens = 0;
+		int cont = 0;
 		do
 		{
-			if (!M_Challenge_Mode) cout << "Best Solution " << M_Best_fo << "Intensification Pool 1 " << M_PoolGoodSolutions.size() << " Pool 2 " << M_PoolGoodSolutions_diver.size() << " Tiempo " << time << "Hilo " << hilo << "Cont " << cont_intens << endl;
-
-			M_distintos.clear();
-			if (hilo %2 == 1)
-			PathRelinking();
-			time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
 			list<pair<vector<int>, double>> tempGS = M_PoolGoodSolutions;
-			tempGS.insert(tempGS.end(), M_PoolGoodSolutions_diver.begin(), M_PoolGoodSolutions_diver.end());
-			cont_intens++;
+			cont++;
 			M_distintos.clear();
-			if (!M_Challenge_Mode) cout << "Best Solution " << M_Best_fo << "Intensification Pool1  " << M_PoolGoodSolutions.size() << " Pool 2 " << M_PoolGoodSolutions_diver.size() << " Tiempo " << time << "Hilo " << hilo << "Iter " << M_Iter << endl;
-			for (list<pair<vector<int>, double>>::iterator itGS = tempGS.begin(); itGS != tempGS.end() && time < M_Total_Time; itGS++)
+			if (!M_Challenge_Mode) cout <<"Best Solution "<<M_Best_fo << "Intensification " << M_PoolGoodSolutions.size() << " Tiempo " << time << "Hilo " << hilo << "Iter " << M_Iter << endl;
+			for (list<pair<vector<int>, double>>::iterator itGS = tempGS.begin(); itGS != tempGS.end() && time < M_Total_Time ; itGS++)
 			{
 				M_fo_temp = 0;
 
@@ -5044,17 +4561,17 @@ void Maintenance::MejorarPoolSolutions2(int hilo)
 				ActualizarMejorSolution(val, 101);
 				VerifySolution();
 				ftime(&t0);
-				//				double val2=VNS(val);
+//				double val2=VNS(val);
 
-//				if (get_random(0, 1) == 0)
-//					VND(val);
-//				else
+				if (get_random(0, 1) == 0)
+					VND(val);
+				else
 					VND2(val);
-				//				if (cuenta>5)
-				//				val = FuncionObjetivoTemp();
-				//				double val2=VNS(val);
-				//				if (M_Intensification)
-				//					PoolGoodSolutions(M_I_T, val);
+//				if (cuenta>5)
+//				val = FuncionObjetivoTemp();
+//				double val2=VNS(val);
+//				if (M_Intensification)
+//					PoolGoodSolutions(M_I_T, val);
 
 				ftime(&t1);
 
@@ -5062,147 +4579,13 @@ void Maintenance::MejorarPoolSolutions2(int hilo)
 				M_Iter++;
 				it++;
 			}
-		} while (cont_intens < 20 && time < M_Total_Time);
-
+		}while (cont<20 && time < M_Total_Time);
 		M_Iter = M_Iter + tempIter;
-		M_Fase_Intensification = true;
+			M_Fase_Intensification = true;
+					
 		M_distintos.insert(Temp.begin(), Temp.end());
 	}
 	time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-	
-	M_Fase_Intensification = false;
-G_r_a_s_p:
-	 cout << "Hilo "<< M_Hilo<< " GraspF " << M_Iter <<" Tiempo "<< time<< endl;
-	//Si le queda tiempo
-	if (time < M_Total_Time && M_Lower_Resources==false)
-		GRASP();
-}
-
-void Maintenance::CrearSolucion(vector<int> Sol)
-{
-
-
-				M_fo_temp = 0;
-
-			LimpiarVectores();
-			LimpiarRiskTempS();
-
-			for (int i = 0; i < M_N_Interventions; i++)
-			{
-				M_I_T[i] = Sol[i];
-
-				M_Interventions[i].Set_T_Temp(Sol[i]);
-				M_NI_Colocadas++;
-				M_Interventions_Colocada[i] = true;
-				AddScenarios(i);
-				AddRecursos(i);
-				M_fo_temp += M_Interventions[i].Get_RiskC(Sol[i]);
-
-			}
-}
-void Maintenance::Intensificar_Gurobi()
-{
-	CrearSolucion(M_Best_I_T);
-	double val = FuncionObjetivoPenalizacion();
-	ActualizarMejorSolution(val, 101);
-	VerifySolution();
-	struct timeb t1;
-	struct timeb t2;
-	ftime(&t2);
-	double time = ((double)((t2.time - M_Time_Initial.time) * 1000 + t2.millitm -M_Time_Initial.millitm)) /1000;
-	M_Time_Modelo = M_Total_Time - time;
-	M_Fase_Intensification = true;
-	//	IntegerFormulationFull_GRBReactive
-	IntegerFormulationFullGRB_Reactive(2);
-}
-void Maintenance::Intensificar(int hilo)
-{
-//	return;
-//	list<vector<int>> Lista_Solutions=;
-	M_No_Visitadas.clear();
-	list<pair<vector<int>,double>> ::iterator it;
-	struct timeb t1;
-	struct timeb t0;
-	double time=0;
-//	return;
-	bool alguna = false;
-	if (M_PoolGoodSolutions.size() > 0)
-		M_Encuentra_Solutions = true;
-	set<int> Temp = M_distintos;
-	if (!M_Encuentra_Solutions)
-		goto G_r_a_s_p;
-
-
-		if (!M_Challenge_Mode) cout <<"Intensificar XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
-
-	M_Fase_Intensification = true;
-//	M_VMejora1 = 0; M_VMejora2 = 0; M_VMejora3 = 0; M_VMejora4 = 0; M_VMejora5 = 0;
-//	 M_Mejora1 = 0; M_Mejora2 = 0; M_Mejora3 = 0; M_Mejora4 = 0; M_Mejora5 = 0;
-	int tempIter = M_Iter;
-	M_Iter = 0;
-	int cont_intens = 0;
-	do
-	{
-		ftime(&t1);
-		time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-
-
-
-
-		M_distintos.clear();
-			M_Iter = 0;
-		if (M_Hilo % 2 == 0)
-		{
-			if (!M_Challenge_Mode)
-				cout << "Best Solution " << M_Best_fo << "Path Relinking Inicio "
-				     << M_PoolGoodSolutions.size() << " Tiempo " << time << " hilo "
-				     << hilo << endl;
-
-			M_Total_Time = M_Total_Time / 2;
-			PathRelinking();
-			time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm -
-			                 M_Time_Initial.millitm)) /
-			       1000;
-
-			M_Total_Time = M_Total_Time * 2;
-			if (!M_Challenge_Mode)
-				cout << "Best Solution " << M_Best_fo << "Path Relinking Fin "
-				     << M_PoolGoodSolutions.size() << " Tiempo " << time << " hilo "
-				     << hilo << endl;
-
-		}
-			M_Iter = 0;
-		list<pair<vector<int>, double>> tempGS = M_PoolGoodSolutions;
-		tempGS.insert(tempGS.end(),M_PoolGoodSolutions_diver.begin(),M_PoolGoodSolutions_diver.end());
-		cont_intens++;
-		M_distintos.clear();
-		if (!M_Challenge_Mode) cout <<"Best Solution "<<M_Best_fo << "Intensification Pool1  " << M_PoolGoodSolutions.size() << " Pool 2 " <<  M_PoolGoodSolutions_diver.size()  << " Tiempo " << time << "Hilo " << hilo << "Iter " << M_Iter << endl;
-		for (list<pair<vector<int>, double>>::iterator itGS = tempGS.begin(); itGS != tempGS.end() && time < M_Total_Time; itGS++)
-		{
-			CrearSolucion((*itGS).first);
-			double val = FuncionObjetivoTemp();
-			ActualizarMejorSolution(val, 101);
-			VerifySolution();
-			ftime(&t0);
-				if (get_random(0, 1) == 0)
-					VND(val);
-				else
-			VND2(val);
-
-			ftime(&t1);
-			time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-			M_Iter++;
-
-		}
-	}while (cont_intens<20 && time < M_Total_Time);
-	M_Iter = M_Iter + tempIter;
-	M_Fase_Intensification = true;
-					
-	M_distintos.insert(Temp.begin(), Temp.end());
-	ftime(&t1);
-	time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
 	M_Fase_Intensification = false;
 	//
 G_r_a_s_p:
@@ -5212,7 +4595,6 @@ G_r_a_s_p:
 		GRASP();
 
 }
-
 void Maintenance::MejorarPoolSolutions()
 {
 	struct timeb t0;
@@ -5386,171 +4768,54 @@ void Maintenance::MejorarPoolSolutions()
 	if (time < Tiempo)
 		GRASP();
 }
-double Maintenance::PathRelinking()
+double Maintenance::PathRelinkingDeAaB(vector<int> &A, vector<int> &B)
 {
-//	return 0;
-	struct timeb t1;
-	double time = 0;
-	int cont1 = 0;
+	//Solución nueva
+	vector <int> Temporal = A;
+	//voy metiendo intervenciones del B en el A
 
-		list<pair<vector<int>, double>> tempGS = M_PoolGoodSolutions;
-		list<pair<vector<int>, double>> tempGS2 = M_PoolGoodSolutions_diver;
-//		tempGS.insert(tempGS.end(), M_PoolGoodSolutions_diver.begin(), M_PoolGoodSolutions_diver.end());
-		ftime(&t1);
-		cont1++;
-		time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-		M_distintos.clear();
-
-		for (list<pair<vector<int>, double>>::iterator itGS = tempGS.begin();
-	             itGS != tempGS.end() && time < M_Total_Time; itGS++)
-		{
-			if (M_Hilo > 1)
-			{
-				for (list<pair<vector<int>, double>>::reverse_iterator itGS2 = tempGS2.rbegin();
-					itGS2 != tempGS2.rend() && time < M_Total_Time; itGS2++)
-				{
-
-					double valkk = CaminosDeAaB((*itGS), (*itGS2));
-					//				ActualizarMejorSolution(val, 1005);
-					ftime(&t1);
-					M_Iter++;
-
-					time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-				}
-			}
-			else
-			{
-				for (list<pair<vector<int>, double>>::iterator itGS2 = tempGS2.begin();
-					itGS2 != tempGS2.end() && time < M_Total_Time; itGS2++)
-				{
-
-					double valkk = CaminosDeAaB((*itGS), (*itGS2));
-					//				ActualizarMejorSolution(val, 1005);
-					ftime(&t1);
-					M_Iter++;
-
-					time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
-
-				}
-				}
-		}
-
-	return 0;
-}
-double Maintenance::CaminosDeAaB(pair<vector<int>, double> &Sol1, pair<vector<int>, double> &Sol2)
-{
-	double time = 0;
-	int cont = 0;
-	int no_iguales = 0;
-	int diferentes = 0;
-	double bestFo = 0;
-	struct timeb t1;
-	do
+	for (int t = 0; t < M_T; t++)
 	{
-		cont++;
-//		printf("EntraCAB %d", cont);
-		//voy metiendo intervenciones del B en el A
-		//Tengo la intervencion A
-		LimpiarVectores();
-		LimpiarRiskTempS();
-		M_NI_Colocadas = 0;
-		//Colocamos todas las que sean iguales
-		diferentes = 0;
-		no_iguales = 0;
-		for (int i = 0; i < M_N_Interventions; i++)
+		vector<int>::iterator it = B.begin();
+		do
 		{
-			if (Sol1.first[i] != Sol2.first[i]) 
-			{
-				no_iguales++;
-				M_I_T[i] = -1;
-//				M_NI_Colocadas--;
-				M_Interventions_Colocada[i] =false;
-			}
-			else
-			{
-				M_I_T[i] = Sol1.first[i];
-				M_Interventions[i].Set_T_Temp(Sol1.first[i]);
-				ColocarIEnTiempo(i, Sol1.first[i]);
-			}
-		}
-		double fobjQuitado = Sol1.second;
+			//Primero colocado en B
 
-		bool no_puedo = false;
-		//Pongo lo que pueda
-		random_shuffle(M_Vec_Alea_I.begin(), M_Vec_Alea_I.end());
-		for (int index = 0; index < M_N_Interventions; index++)
-		{
-
-			int i2 = M_Vec_Alea_I[index];
-			if (Sol1.first[i2] != Sol2.first[i2])
-			{
-				diferentes++;
-
-
-				//Incluyo la Sol2.first
-				if (PuedoColocar(i2, Sol2.first[i2]))
-				{
-					M_I_T[i2] = Sol2.first[i2];
-
-					ColocarIEnTiempo(i2, Sol2.first[i2]);
-					fobjQuitado = (M_Alpha * (M_fo_temp / (double)M_T) + (1 - M_Alpha) * (M_fo2_temp / (double)M_T));
-				}
-
-
-			}
-
-
-		}
-		double val = 0;
-		if (M_NI_Colocadas != M_N_Interventions) 
-		{
-			if ((diferentes > 0.03 * M_N_Interventions))
-			{
-				printf("Entrag1");
-				int reparada = RepararCplex(-1);
-				if (reparada == true) 
-				{
-					double fobjNueva = FuncionObjetivoTemp();
-					val=VND(fobjNueva);
-						
-				}
-				printf("Saleg1");
+//			it = find_if(it, B.end(), [](int ki) {return (ki == j); });
+			if (it == B.end())
+				continue;
+			//Quito lo de la intervention 
+			M_Interventions[(*it)].Set_T_Temp(Temporal[(*it)]);
+			SubtractScenarios((*it));
+			QuitarRecursos((*it));
+			//Coloco la nueva
+			Temporal[(*it)] = t;
+			M_Interventions[(*it)].Set_T_Temp(t);
+			AddScenarios((*it));
+			AddRecursos((*it));
 			
-			}
-		}
-		else
-		{
-			double val_old = fobjQuitado;
-			fobjQuitado = FuncionObjetivo();
-			val=VND(fobjQuitado);
-
-		}
-
-		ftime(&t1);
+			//quitamos todo lo que haga que la solución no es posible
+			//puede ser por recursos o por exclusiones
 
 
-		time = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm -
-		                 M_Time_Initial.millitm)) /
-		       1000;
-//				printf("SaleCAB %d", cont);
-		
 
-	} while (cont < 5 && no_iguales>0.1 * M_N_Interventions && time<M_Total_Time);
-	return bestFo;
+
+		} while (it != B.end());
+
+
+	}
+	return 0;
 }
 void Maintenance::ComputeExcessTemp()
 {
 	for (int i = 0; i < M_N_Interventions; i++)
 	{
 		double temp = 0.0;
-		int duracion = M_Interventions[i].Get_T_F_Temp() - M_Interventions[i].Get_T_Temp();
 		for (int t = M_Interventions[i].Get_T_Temp(); t < M_Interventions[i].Get_T_F_Temp(); t++)
 		{
 			temp += M_vfo2_temp[t];
 		}
-		M_Interventions[i].Set_Excess_temp(temp/(double) duracion);
+		M_Interventions[i].Set_Excess_temp(temp);
 	}
 }
 double Maintenance::MejoraIntercambiosEjection(int tipo)
@@ -5560,9 +4825,6 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 	double fobjAntiguo = FuncionObjetivoTemp();
 	bool busqueda = M_Busqueda_Local;
 	M_Busqueda_Local = false;
-	bool Intensification = M_Intensification;
-	if (fobjAntiguo < M_Best_fo + __FLT_EPSILON__)
-		M_Intensification = true;
 	if (tipo == 1)
 	{
 		ComputeExcessTemp();
@@ -5584,39 +4846,70 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 				//Vamos probando para ir cambiando a donde se pueda mejorar
 		//		for (int t0 = 0; t0 < M_T && Cambio != true && M_vfo2_temp[M_Ivfo2_temp[t0]]>0; t0++)
 	//		if (get_random(0,1)==0)
-
-		if (tipo==1)
-			sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(), [&](size_t i, size_t j) { return ((M_Interventions[i].Get_Excess_temp()) > (M_Interventions[j].Get_Excess_temp())); });
+		if (M_Pool == false || get_random(0, 1) == 0)
+		{
+			//if (get_random(0, 4) >= 1)
+			//	sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
+			//		[&](size_t i, size_t j)
+			//{ if ((M_Interventions[i].Get_RiskC(M_I_T[i]) - M_Interventions[i].Get_Min_Risk()) > (M_Interventions[j].Get_RiskC(M_I_T[j]) - M_Interventions[j].Get_Min_Risk()))
+			//		return true;
+			//else
+			//		return (M_Interventions[i].Get_Min_Risk() > M_Interventions[j].Get_Min_Risk());
+			//});
+			//else
+				random_shuffle(M_Interventions_Dif.begin(), M_Interventions_Dif.end());
+		}
 		else
-			sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
-				[&](size_t i, size_t j) { return (M_Interventions[i].Get_RiskC(M_I_T[i]) > M_Interventions[j].Get_RiskC(M_I_T[j])); });
+			sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(), [&](size_t i, size_t j) { return ((M_Interventions[i].Get_Excess_temp()) > (M_Interventions[j].Get_Excess_temp())); });
+
+
+		//		sort(M_Interventions_Dif.begin(), M_Interventions_Dif.end(),
+		//			[&](size_t i, size_t j) { return (M_Interventions[i].Get_RiskC(M_I_T[i]) > M_Interventions[j].Get_RiskC(M_I_T[j])); });
+
 
 		ftime(&t1);
 		time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
 
 		for (int index = 0; index < ((M_N_Interventions - 1)) && (Algun_Cambio != true || M_Busqueda_Local) && time_v1<M_Total_Time; index++)
 		{
-
-
 			Cambio = false;
-			if (!M_Fase_Intensification && get_random(0, 2) <=0) continue;
-			if (!M_Fase_Intensification && index > ((M_N_Interventions - 1) / 3))
-				break;
+
+			//		for (list<pair<int, int>>::iterator it = M_I_T_Solution.begin(); it != M_I_T_Solution.end() && Cambio != true; it++)
+			//		{
+
+				//		int inter = (*it).first;
+				//		int t_inter = (*it).second;
 			int inter = M_Interventions_Dif[index];
 
-
+			//			if (M_Interventions[inter].Get_Exclusions().size() == 0)
+			//				continue;
 
 			int t_inter = M_I_T[inter];
 			int t_interf = M_Interventions[inter].Get_T_F_Temp();
+			//		for (list<pair<int, int>>::iterator it = M_I_T_Solution.begin(); it != M_I_T_Solution.end() && Cambio != true; it++)
+			//		{
 
+			//			int inter = (*it).first;
+			//			int t_inter = (*it).second;
 
+			if (tipo == 0 && M_Interventions[inter].Get_RiskC(t_inter) < (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__))
+				break;
+			if (tipo == 1 && index > ((M_N_Interventions - 1) / 3))
+				break;
 			if (!PuedoQuitar(inter, t_inter)) continue;
-
+			/*if (M_Interventions[inter].Get_RiskC(t_inter) < (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__))
+			{
+				if (get_random(0, 1) == 0)
+					continue;
+			}
+			else
+			{
+				if (get_random(0, 10) <= 3)
+					continue;
+			}*/
 
 			double fobj1 = M_Interventions[inter].Get_RiskC(t_inter);
 			M_fo_temp -= fobj1;
-			M_Min_fo_temp += M_Interventions[inter].Get_Min_Risk();
-
 
 			//Quito lo de la función objetvio
 			SubtractScenarios(inter);
@@ -5625,19 +4918,25 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 			QuitarRecursos(inter);
 			M_I_T[inter] = -1;
 			M_Interventions_Colocada[inter] = false;
+			//			cout << "Quito " << inter << " Time " << t_inter << endl;
 			for (int index2 = index + 1; index2 < M_N_Interventions && Cambio != true && time_v1<M_Total_Time; index2++)
 			{
-				if (!M_Fase_Intensification && get_random(0, 2) <=0) continue;
-				if (!M_Fase_Intensification && index2 > ((M_N_Interventions - 1) / 3))
-					break;
 				int inter2 = M_Interventions_Dif[index2];
+
+
+				//				if (M_Interventions[inter2].Get_Exclusions().size() == 0)
+				//					continue;
 				int t_inter2 = M_I_T[inter2];
 				int t_inter2f = M_Interventions[inter2].Get_T_F_Temp();
-	
+				//				if ( M_Interventions[inter].Get_RiskC(t_inter) < (M_Interventions[inter].Get_Min_Risk() + __FLT_EPSILON__) &&
+				//					M_Interventions[inter2].Get_RiskC(t_inter2) < (M_Interventions[inter2].Get_Min_Risk() + __FLT_EPSILON__))
+					//				continue;
+
+
 				if (!PuedoQuitar(inter2, t_inter2)) continue;
 				double fobj2 = M_Interventions[inter2].Get_RiskC(t_inter2);
 				M_fo_temp -= fobj2;
-				M_Min_fo_temp += M_Interventions[inter2].Get_Min_Risk();
+
 				//Quito lo de la función objetvio
 				SubtractScenarios(inter2);
 				FuncionObjetivoTemp(M_Interventions[inter2].Get_T_Temp(), M_Interventions[inter2].Get_T_F_Temp());
@@ -5646,13 +4945,11 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 				QuitarRecursos(inter2);
 				M_I_T[inter2] = -1;
 				M_Interventions_Colocada[inter2] = false;
-
+				//				cout << "Quito2 " << inter2 << " Time " << t_inter2 << endl;
+								//Recorro en orden de los iniciales
 				int cont2 = 0;
-				int Cuantos = 10;
-				if (M_Fase_Intensification) Cuantos = M_T;
-				for (vector<int> ::iterator itt2 = M_Interventions[inter2].Get_T_Ordenados_Risk().begin(); itt2 != M_Interventions[inter2].Get_T_Ordenados_Risk().end() && Cambio != true && cont2 < Cuantos && time_v1<M_Total_Time; itt2++)
+				for (vector<int> ::iterator itt2 = M_Interventions[inter2].Get_T_Ordenados_Risk().begin(); itt2 != M_Interventions[inter2].Get_T_Ordenados_Risk().end() && Cambio != true && cont2 < 10 && time_v1<M_Total_Time; itt2++)
 				{
-					if (!M_Fase_Intensification && get_random(0, 2) <= 1) continue;
 					//donde estaba
 					if (t_inter2 == (*itt2))
 						continue;
@@ -5660,12 +4957,9 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 					int timef2 = timeini2 + M_Interventions[inter2].Get_Delta(timeini2);
 
 					M_fo_temp += M_Interventions[inter2].Get_RiskC(timeini2);
-					M_Min_fo_temp -= M_Interventions[inter2].Get_Min_Risk();
 					if ((M_Alpha * (M_fo_temp / (double)M_T)) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
 					{
 						M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
-						M_Min_fo_temp +=
-						    M_Interventions[inter2].Get_Min_Risk();
 						break;
 					}
 					if (PuedoColocar(inter2, timeini2))
@@ -5686,10 +4980,8 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 						M_Interventions_Colocada[inter2] = true;
 						//						cout << "add11 " << inter2 << " Time " << timeini2 << endl;
 						int cont = 0;
-						for (vector<int> ::iterator itt = M_Interventions[inter].Get_T_Ordenados_Risk().begin(); itt != M_Interventions[inter].Get_T_Ordenados_Risk().end() && Cambio != true && cont < Cuantos; itt++)
+						for (vector<int> ::iterator itt = M_Interventions[inter].Get_T_Ordenados_Risk().begin(); itt != M_Interventions[inter].Get_T_Ordenados_Risk().end() && Cambio != true && cont < 10; itt++)
 						{
-
-							if (!M_Fase_Intensification && get_random(0, 2) <=1) continue;
 							if (t_inter == (*itt))
 								continue;
 							int timeini = (*itt);
@@ -5698,15 +4990,10 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 							if ((timeini2 >= t_interf || timef2 <= t_inter) && (timeini >= t_inter2f || timef <= t_inter2))
 								continue;
 							M_fo_temp += M_Interventions[inter].Get_RiskC(timeini);
-							M_Min_fo_temp -=
-							    M_Interventions[inter].Get_Min_Risk();
 							double partial = fobj_prev + (M_Alpha * (M_Interventions[inter].Get_RiskC(timeini) / (double)M_T));
 							if ((partial) > (fobjAntiguo - __FLT_EPSILON__ - M_Min_Improve))
 							{
 								M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-								M_Min_fo_temp +=
-								    M_Interventions[inter]
-								        .Get_Min_Risk();
 								break;
 							}
 							if (PuedoColocar(inter, timeini))
@@ -5716,14 +5003,26 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 								int timefin = timeini + M_Interventions[inter].Get_Delta(timeini);
 								if (M_Pool)  CopyFO2();
 								AddScenarios(inter, timeini, timefin);
+//								if (inter == 5 && timeini == 10 && timefin == 12 && M_Iter==2 && inter2==16)
+//									int kk = 9;
 								double fobjNew = FuncionObjetivoTemp(timeini, timefin);
+								//								cout << "add12 " << inter << " Time " << timeini << endl;
+								//								double fobjNew = FuncionObjetivoTemp();
+								//								if (fobjNew2 > fobjNew + __FLT_EPSILON__ || fobjNew2 < fobjNew - __FLT_EPSILON__)
+								//									int problema = 9;
 								if (fobjNew < (fobjAntiguo -  M_Min_Improve) || (fobjNew < (M_Best_fo - __FLT_EPSILON__)))
+		//						if (fobjNew < (fobjAntiguo - __FLT_EPSILON__))
 								{
+									//	(*it).second = timeini;
+			//							CambiarSolution(inter, timeini);
+//									PonerAlFinalSolution(inter, timeini);
 									M_I_T[inter] = timeini;
 									M_I_Seasons[inter] = M_T_Season[timeini];
 									M_Interventions[inter].Set_T_Temp(timeini);
 									M_Interventions_Colocada[inter] = true;
 									AddRecursos(inter);
+//									M_I_T[inter2] = timeini2;
+//									PonerAlFinalSolution(inter2, timeini2);
 
 									fobjAntiguo = fobjNew;
 
@@ -5734,9 +5033,6 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 								else
 								{
 									M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
-									M_Min_fo_temp +=
-									    M_Interventions[inter]
-									        .Get_Min_Risk();
 									if (M_Pool)  CopyBackFO2();
 									SubtractScenarios(inter, timeini, timefin);
 //									FuncionObjetivoTemp(timeini, timefin);
@@ -5745,21 +5041,13 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 
 							}
 							else
-							{
-								M_fo_temp -=
-								    M_Interventions[inter]
-								        .Get_RiskC(timeini);
-								M_Min_fo_temp +=
-								    M_Interventions[inter]
-								        .Get_Min_Risk();
-							}
+								M_fo_temp -= M_Interventions[inter].Get_RiskC(timeini);
+
 
 						}
 						if (Cambio != true)
 						{
 							M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
-							M_Min_fo_temp +=
-							    M_Interventions[inter2].Get_Min_Risk();
 							SubtractScenarios(inter2, timeini2, timefin2);
 							if (M_Pool) CopyBackFO2_2();
 //							FuncionObjetivoTemp(timeini2, timefin2);
@@ -5776,12 +5064,7 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 
 					}
 					else
-					{
-						M_fo_temp -=
-						    M_Interventions[inter2].Get_RiskC(timeini2);
-						M_Min_fo_temp +=
-						    M_Interventions[inter2].Get_Min_Risk();
-					}
+						M_fo_temp -= M_Interventions[inter2].Get_RiskC(timeini2);
 
 						ftime(&t1);
 						time_v1 = ((double)((t1.time - M_Time_Initial.time) * 1000 + t1.millitm - M_Time_Initial.millitm)) / 1000;
@@ -5792,7 +5075,6 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 				{
 					AddRecursos(inter2);
 					M_fo_temp += fobj2;
-					M_Min_fo_temp -= M_Interventions[inter2].Get_Min_Risk();
 					M_Interventions_Colocada[inter2] = true;
 					M_I_T[inter2] = t_inter2;
 					AddScenarios(inter2);
@@ -5810,7 +5092,6 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 			{
 				AddRecursos(inter);
 				M_fo_temp += fobj1;
-				M_Min_fo_temp -= M_Interventions[inter].Get_Min_Risk();
 				M_Interventions_Colocada[inter] = true;
 				M_I_T[inter] = t_inter;
 				AddScenarios(inter);
@@ -5825,7 +5106,6 @@ double Maintenance::MejoraIntercambiosEjection(int tipo)
 
 	}while (Algun_Cambio == true && M_Busqueda_Local && time_v1<M_Total_Time);
 		M_Busqueda_Local = busqueda;
-		M_Intensification == Intensification;
 
 	return fobjAntiguo;
 }
@@ -6748,21 +6028,18 @@ bool Maintenance::ConstructiveRA(int tipo) //Si tipo es 0 es por diferencia, si 
 		terminado = false;
 
 		int choose_elegido = -1;
-		if (M_Best_I_T.size() > 0)
-		{
-			if (get_random(0, 1) >= 1)
-				choose_elegido = ElegirMayorAleatorizado(tipo);
-			else
-			{
-				//		if (get_random(0,1)==0)
-				choose_elegido = ElegirMayorAleatorizadoSPG(tipo);
-				//		else
-				//			choose_elegido = ElegirMenorAleatorizadoSPG(tipo);
-			}
-			//M_Tipo);
-		}
+		if (get_random(0,1)>=1)
+		choose_elegido = ElegirMayorAleatorizado(tipo);
 		else
-			choose_elegido = ElegirMenorRecursos();
+		{
+	//		if (get_random(0,1)==0)
+				choose_elegido = ElegirMayorAleatorizadoSPG(tipo);
+	//		else
+	//			choose_elegido = ElegirMenorAleatorizadoSPG(tipo);
+		}
+			 //M_Tipo);
+
+
 		/*
 		for (int i = 0; i < M_N_Interventions && elegido != true; i++)
 		{
@@ -6790,27 +6067,20 @@ bool Maintenance::ConstructiveRA(int tipo) //Si tipo es 0 es por diferencia, si 
 		//Coloca la intervention en la primera T disponible
 //		if (M_I_T_Solution.size() == 45)
 //			int kk = 9;
-		if (M_Best_I_T.size() > 0)
+
+		if (get_random(0, 2) >= 2 )
 		{
-			if (get_random(0, 2) >= 2)
-			{
-				int telegido = ElegirMayorTFuncionObjetivoAbsoluto(choose_elegido);
-				ColocarIEnTiempo(choose_elegido, telegido);
-				/*			if (get_random(0, 1) >= 2) 
+			int telegido = ElegirMayorTFuncionObjetivoAbsoluto(choose_elegido);
+			ColocarIEnTiempo(choose_elegido, telegido);
+/*			if (get_random(0, 1) >= 2) 
 				ColocarIEnTiempoValor(choose_elegido);
 			else
 				ColocarIEnTiempoSPG(choose_elegido);*/
-			}
-
-			else
-			{
-				int telegido = ElegirMayorTFuncionObjetivo(choose_elegido);
-				ColocarIEnTiempo(choose_elegido, telegido);
-			}
 		}
+		
 		else
 		{
-			int telegido = ElegirMenorTRecursos(choose_elegido);
+			int telegido = ElegirMayorTFuncionObjetivo(choose_elegido);
 			ColocarIEnTiempo(choose_elegido, telegido);
 		}
 		ModificarRiskTemp(M_Interventions[choose_elegido].Get_T_Temp(), M_Interventions[choose_elegido].Get_T_F_Temp());
@@ -7084,9 +6354,6 @@ void Maintenance::ColocarIEnTiempo(int n_int, int telegido)
 	M_Perdida_Parcial += (M_Interventions[n_int].Get_RiskC()[telegido] - M_Interventions[n_int].Get_Min_Risk());
 	M_fo_first += M_Interventions[n_int].Get_RiskC()[telegido];
 	M_fo_temp += M_Interventions[n_int].Get_RiskC()[telegido];
-	M_Min_fo_temp -= M_Interventions[n_int].Get_Min_Risk();
-	if (M_Min_fo_temp < (-1)*__FLT_EPSILON__)
-		int kk = 9;
 	M_Waste += M_Interventions[n_int].Get_RiskC()[telegido] - M_Interventions[n_int].Get_Min_Risk();
 	FuncionObjetivoTemp(M_Interventions[n_int].Get_T_Temp(), M_Interventions[n_int].Get_T_F_Temp());
 //	printf("Sale 32");
@@ -7176,51 +6443,6 @@ double Maintenance::SegundaParteFObj(int numero_i,int timeini,int timefin,double
 	return (fobjetivo_second_new - fobjetivo_second);
 
 }
-int Maintenance::ElegirMenorTRecursos(int num_int)
-{
-	bool stop = false;
-	vector<int> vec_temp;
-
-	double Min = __FLT_MAX__;
-	int elegido = -1;
-	list<int>::iterator it = M_Interventions[num_int].Get_T_Ordenados_Risk_Temp().begin();
-	do
-	{
-
-
-
-		if (PuedoColocar(num_int, (*it)))
-		{
-			if (M_Interventions[num_int].Get_WorkloadC((*it))<Min)
-			{
-				if (elegido == (-1) || get_random(0, 2) >= 1)
-				{
-					elegido = (*it);
-					Min = M_Interventions[num_int].Get_WorkloadC((*it));
-				}
-			}
-			it++;
-		}
-		else
-		{
-			//			if (M_Interventions[num_int].Get_T_Ordenados_RiskQ_Temp().size() != M_Interventions[num_int].Get_T_Ordenados_Risk_Temp().size())
-			//				int kk = 9;
-			int borrado = (*it);
-			M_Interventions[num_int].Get_T_Ordenados_RiskQ_Temp().erase(find(
-			    M_Interventions[num_int].Get_T_Ordenados_RiskQ_Temp().begin(),
-			    M_Interventions[num_int].Get_T_Ordenados_RiskQ_Temp().end(), borrado));
-
-			it = M_Interventions[num_int].Get_T_Ordenados_Risk_Temp().erase(it);
-			//			if (M_Interventions[num_int].Get_T_Ordenados_RiskQ_Temp().size() != M_Interventions[num_int].Get_T_Ordenados_Risk_Temp().size())
-			//				int kk = 9;
-			if (M_Interventions[num_int].Get_T_Ordenados_Risk_Temp().size() == 0)
-				stop = true;
-		}
-
-	} while (it != M_Interventions[num_int].Get_T_Ordenados_Risk_Temp().end() && stop != true);
-
-	return elegido;
-}
 int Maintenance::ElegirMayorTFuncionObjetivo(int num_int)
 {
 	bool stop = false;
@@ -7283,8 +6505,6 @@ int Maintenance::ElegirMayorTFuncionObjetivoAbsoluto(int num_int)
 	int index_anterior = 0;
 	int ele_cont = 0;
 	int cont = 0;
-	int CuantosMiro = 2;
-	if (M_Fase_Intensification) CuantosMiro = M_T;
 	for (list<int> ::iterator it = M_Interventions[num_int].Get_T_Ordenados_Risk_I().begin(); it != M_Interventions[num_int].Get_T_Ordenados_Risk_I().end(); it++)
 	{
 
@@ -7313,13 +6533,11 @@ int Maintenance::ElegirMayorTFuncionObjetivoAbsoluto(int num_int)
 
 			if (PuedoColocar(num_int, pos_t))
 			{
-				if (elegido>=0 && get_random(0,2)<=1)
-				continue;
 				cont++;
-
-				if (cont > CuantosMiro && M_NI_Colocadas < (0.95 * M_N_Interventions))
-					return elegido;
-
+				if (M_Iter%2==0 && elegido>=0 && get_random(0,2)<=1)
+				continue;
+//				if (3 * cont > M_T)
+//					break;
 				fobj2 = SegundaParteFObj(num_int, pos_t, pos_t + M_Interventions[num_int].Get_Delta(pos_t),  (Min - (M_Alpha * fobj1)) / (1 - M_Alpha));
 					//		if ((M_Interventions[n_int].Get_RiskC()[(*it)] > (min + __FLT_EPSILON__)) || vec_temp.size() > 1)
 				if ((M_Alpha*fobj1 + (1-M_Alpha)*fobj2 < (Min - __FLT_EPSILON__)))
@@ -7555,7 +6773,6 @@ void Maintenance::ColocarIEnBestTiempo(int n_int)
 	M_Interventions_Colocada[n_int] = true;
 	M_fo_first += M_Interventions[n_int].Get_RiskC()[telegido];
 	M_fo_temp += M_Interventions[n_int].Get_RiskC()[telegido];
-	M_Min_fo_temp -= M_Interventions[n_int].Get_Min_Risk();
 	M_fo_first -= M_Interventions[n_int].Get_RiskC()[told];
 	M_fo_temp -= M_Interventions[n_int].Get_RiskC()[told];
 	//Calcular el riesgo que meto para ver si es correcto
@@ -7616,7 +6833,6 @@ void Maintenance::LimpiarVectores()
 	M_Waste = 0;
 	M_fo_first = 0;
 	M_fo_temp = 0;
-	M_Min_fo_temp = M_Min_fo;
 
 
 	M_Perdida_Parcial = 0;

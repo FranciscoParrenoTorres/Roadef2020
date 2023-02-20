@@ -381,7 +381,6 @@ public:
 		return 0;
 
 	};
-	
 	inline int position(int tactual, int tinicio)
 	{
 		return ( I_RiskN[tactual].size() - 1) - ( min(tactual, I_tmax - 1) - tinicio);
@@ -426,7 +425,6 @@ public:
 		return 0;
 
 	};
-
 	inline double Get_WorkloadN(int resource_id, int tinicio, int tactual)
 	{
 //		if (I_Workload_N[resource_id].size() < 1) 
@@ -445,10 +443,6 @@ public:
 	{
 		return I_T_RiskC[a];
 	}
-	double  Get_RiskCxT(int a)
-	{
-		return I_T_RiskCxT[a];
-	}
 	double  Get_RiskExcess(int a)
 	{
 		return I_T_RiskExcess[a];
@@ -463,12 +457,7 @@ public:
 		return I_Risk[tactual][tinicio][I_Risk[tactual][tinicio].size()];
 		
 	};
-	void Limpiar()
-	{
-		I_Risk.clear();
-		I_Workload.clear();
-	}
-	
+
 	string  Get_Name(void) { return I_Name; };
 	vector<int>& Get_T_Ordenados_Risk() { return I_T_ordenados_Risk; };
 	list<int>& Get_T_Ordenados_Risk_Temp() { return I_T_ordenados_Risk_Temp; };
@@ -623,14 +612,11 @@ class Maintenance
 	double M_Delta;
 	double M_Quantile;
 	double M_Alpha;
-	double M_Alpha_Cplex=0.0;
 	int M_Tipo;
 	int M_ComputionTime;
 	int M_Total_Time;
 	double M_Cota;
 	double M_Best_fo;
-		double M_Best_fo_1;//Primera parte función objetivo
-	double M_Best_fo_2;//Segunda parte función objetivo
 	double M_fo_temp;
 	double M_fo2_temp;
 	vector<double> M_vfo2_temp;
@@ -644,11 +630,6 @@ class Maintenance
 	double M_fo_temp_Copy2;
 	double M_fo_temp_Copy3;
 	double M_fo_temp_Best;
-	double M_Min_fo_temp;
-	double M_Min_fo_temp_Copy;
-	double M_Min_fo_temp_Copy2;
-	double M_Min_fo_temp_Copy3;
-	double M_Min_fo;
 	vector<Resource> M_Resources;
 	vector<Intervention> M_Interventions;
 	list<pair<vector<int>, double>> M_Pool_Solutions_Integer;
@@ -663,8 +644,6 @@ class Maintenance
 	vector<double> M_T_M2_Suma;
 	vector<double> M_T_M3_Suma;
 	vector<double> M_T_M4_Suma;
-	vector<double> M_Best_Quantile;
-	vector<double> M_Best_Media;
 	vector<bool> M_T_M1;
 	vector<bool> M_T_M2;
 	vector<bool> M_T_M3;
@@ -681,17 +660,6 @@ class Maintenance
 	vector<bool> M_Interventions_Colocada_Best;//Intervencions colocadas copia
 	vector< Season > M_Seasons;
 	vector<int> M_Scenarios_number;
-	vector<vector<double>> M_CoefIT;
-	vector<vector<int>> M_FreqIT;
-	vector<vector<double>> M_PenalScenIT;
-	vector<vector<double>> M_Coef;
-	vector<vector<int>> M_Freq;
-	vector<double> M_Excess;
-	vector<int> M_NumIT;
-	vector<double> M_ExcessXI;
-	vector<vector<double>> M_PenalScen;
-	vector<vector<double>> M_Best_Coef;
-	vector<vector<double>> M_Best_Freq;
 	vector<list<double>> M_T_Temp_Risk;
 	vector<vector<double>> M_T_Temp_Risk_S;
 	vector<vector<double>> M_T_Temp_Risk_FO;
@@ -751,7 +719,6 @@ class Maintenance
 	vector<int> M_I_T_Copy;
 	vector<int> M_I_T_Copy2;
 	vector<int> M_I_T_Copy3;
-	vector<vector<bool>> M_Scenario_Activo;
 	list<pair<int, int>> M_I_T_Solution;
 	list<pair<int, int>> M_I_T_Solution_Copy;
 	list<pair<int, int>> M_I_T_Solution_Copy2;
@@ -770,7 +737,6 @@ class Maintenance
 	bool M_Mixed_Risk;
 	int M_Random_Constructive; //0 es determinista //1 aleatorizado
 	int M_Iterations;
-	int M_Iter_Sol = 0;
 	int M_Iter;
 	int M_Best_Iter;
 	vector<bool> M_T_Temp;
@@ -840,13 +806,8 @@ class Maintenance
 	bool M_Formulacion_Cuantiles;
 	double M_Min_Improve;
 	bool M_Busqueda_Local;
-	bool M_Original;
-	bool M_Formulations;
-	double M_Solution_Phase1;
-	double M_Solution_Phase2;
-	double M_Solution_Phase3;
-	double M_Solution_Phase4;
-	int M_Tipo_Formulation;
+	double M_Best_fo_1;//Primera parte función objetivo
+	double M_Best_fo_2;//Segunda parte función objetivo
 	//0 es ninguna
 	//1 es VND
 	//2 es la quitar
@@ -861,7 +822,10 @@ class Maintenance
 	set<int> M_No_Visitadas;
 	int M_NThreads;
 	int M_GapPool;
-
+	list<pair<vector<int>, double>> M_PoolGoodSolutions;
+	double M_MinPoolSolutions;
+	int M_SizePoolSolutions;
+	set<int> M_PoolGoodSolutionsD;
 	bool M_Intensification;
 	int M_Time_Intensification;
 	double M_Time_Leer;
@@ -884,28 +848,12 @@ class Maintenance
 	set<int> M_distintosM;
 	//Iter de la formulation
 	int M_Iter_Formulation;
-	bool M_Cplex;
 
       public:
-		  	list<pair<vector<int>, double>> M_PoolGoodSolutions;
-		list<pair<vector<int>, double>> M_PoolGoodSolutions_diver;
-	double M_MinPoolSolutions;
-		double M_MinPoolSolutions_diver;
-		int M_MinDistintosPool;
-	int M_SizePoolSolutions;
-	set<int> M_PoolGoodSolutionsD;
-		set<int> M_PoolGoodSolutions_diverD;
 	Maintenance() {};
 
 	Maintenance(int a)
 	{
-		//0 es la normal
-		//1 es la orignal
-		//2 es la mezcla
-		//3 es el máximo
-		M_Tipo_Formulation = 0;
-		M_Reparar = false;
-		M_Cplex = true;
 		M_Iter_Formulation = 1;
 		M_Hilo = 0;
 		M_NThreads = 0;
@@ -950,12 +898,8 @@ class Maintenance
 		M_Time_Optimo = 0;
 		M_Time_Populate = 0;
 		M_GapPool = 100;
-		
-
-		M_SizePoolSolutions = 5;
-		M_MinDistintosPool = 5;
+		M_SizePoolSolutions = 20;
 		M_MinPoolSolutions = __FLT_MAX__;
-		M_MinPoolSolutions_diver = __FLT_MAX__;
 		M_Intensification = false;
 		M_Time_Intensification = 0;
 		M_Challenge_Mode = false;
@@ -972,27 +916,6 @@ class Maintenance
 
 	virtual ~Maintenance() {};
 	double DestruirCplex(double fobjAntiguo);
-	void SetCplex(bool a)
-	{
-		M_Cplex = a;
-	};
-	bool Get_Formulations(void) { return M_Formulations; };
-	void Set_Formulations(bool a) { M_Formulations = a; };
-	int Get_Tipo_Formulation(void) { return M_Tipo_Formulation; };
-	void Set_Tipo_Formulation(int a) { M_Tipo_Formulation = a; };
-	double Get_SolFase(int a) {
-		if (a==1) return M_Solution_Phase1; 
-		if (a==2) return M_Solution_Phase2;
-		if (a==3) return M_Solution_Phase3;
-		if (a==4) return M_Solution_Phase4;
-	};
-	void Set_SolFase(int a,double val)
-	{
-		if (a==1) M_Solution_Phase1=val; 
-		if (a==2) M_Solution_Phase2=val; 
-		if (a==3) M_Solution_Phase3=val; 
-		if (a==4) M_Solution_Phase4=val; 
-	}
 	double Get_Sol_I() { return M_Best_Integer_For; };
 	double Get_Sol_Q() { return M_Best_Integer_ForQ; };
 	double Get_Sol_M() { return M_Best_Integer_ForMax; };
@@ -1001,10 +924,6 @@ class Maintenance
 	list<pair<vector<int>, double>>& GetListaSolucionesInteger(int i) {
 		return M_Pool_Solutions_Lista[i];
 	};
-	void SetReparar(bool a) { M_Reparar = a; };
-	void CrearSolucion(vector<int> Sol);
-	void Intensificar_Gurobi();
-//	double CrearSolucion(vector<int> Sol);
 	set<int> &GetDistintos(void)
 	{
 		return M_distintos;
@@ -1026,13 +945,10 @@ class Maintenance
 	{
 		M_Best_I_T = lista;
 	};
-	void InsertarGoodSolutions(list<pair<vector<int>, double>>& lista);
-	
 	int Get_Hilo(void) { return M_Hilo; };
 	void Set_Hilo(int a) { M_Hilo = a; };
 	void SetTotalTime(int a) { M_Total_Time = a; };
 	void SetNumberOfThreads(int a) { M_Number_Threads = a; };
-
 	void Set_Seed(int a) { M_seed = a; };
 	void Set_MGapPool(int a) { M_GapPool = a; };
 	void Set_ChallengeMode(bool a) { M_Challenge_Mode = a; };
@@ -1044,7 +960,6 @@ class Maintenance
 	double TerminarSolutionPrimeraCopy(double val);
 	double VNS(double);
 	double VND2(double& val);
-	void CrearSolution(std::vector<std::vector<int>> &key1, GRBVar *Xsol);
 	//Set
 	bool CompararDosSumasT(vector<bool>& Cambios, vector<double>& SumaT1, vector<double>& SumaT2);
 
@@ -1065,7 +980,6 @@ class Maintenance
 	void Set_Scenarios_Number(vector<int>& a) { M_Scenarios_number = a; };
 	void Set_Exclusions(list< vector< int> >& a) { M_Exclusions = a; };
 	void Set_Time_Formulation(int a) { M_Time_Modelo = a; };
-	void Set_Time_Formulation1(double a) { M_Time_Modelo1 = a; };
 	void Set_Time_Leer(double a) { M_Time_Leer = a; };
 	void Set_Max_Riesgo(double a) { M_Max_Riesgo = a; };
 	void Set_Max_Formulation(bool a) { M_Max_Formulation = a; };
@@ -1074,21 +988,11 @@ class Maintenance
 	void Set_Pool_Solutions(bool a) { M_Pool_Solutions = a; };
 	void Insertar(list<pair<vector<int>, double>>& lista);
 	void ClearPool() { M_Pool_Solutions_Integer.clear(); };
-	void ModificarCoeficientes();
 	inline void CopyFO2()
 	{
 		M_vfo2_temp_Copy = M_vfo2_temp;
 		M_fo2_temp_Copy = M_fo2_temp;
 	};
-	inline int Distancia(vector<int> &A, vector<int> &B)
-	{
-		int dist = 0;
-		for (auto i = 0; i < A.size(); i++)
-		{
-			if (A[i] < (B[i]-3) || A[i]>(B[i]+3)) dist++;
-		}
-		return dist;
-	}
 	inline void CopyBackFO2()
 	{
 		M_vfo2_temp = M_vfo2_temp_Copy;
@@ -1124,7 +1028,6 @@ class Maintenance
 		M_NI_Colocadas_Copy = M_NI_Colocadas;
 		M_fo_temp_Copy = M_fo_temp;
 		M_vfo2_temp_Copy = M_vfo2_temp;
-		M_Min_fo_temp_Copy = M_Min_fo_temp;
 		for (register int i = 0; i < M_N_Interventions; i++)
 		{
 			M_Interventions_Colocada_Copy[i] = M_Interventions_Colocada[i];
@@ -1147,7 +1050,6 @@ class Maintenance
 		M_fo_temp = M_fo_temp_Copy;
 		M_vfo2_temp = M_vfo2_temp_Copy;
 		M_NI_Colocadas = M_NI_Colocadas_Copy;
-		M_Min_fo_temp = M_Min_fo_temp_Copy;
 		for (register int i = 0; i < M_N_Interventions; i++)
 		{
 			M_Interventions_Colocada[i] = M_Interventions_Colocada_Copy[i];
@@ -1172,7 +1074,6 @@ class Maintenance
 		M_NI_Colocadas_Copy2 = M_NI_Colocadas;
 		M_I_T_Copy2 = M_I_T;
 		M_fo_temp_Copy2 = M_fo_temp;
-		M_Min_fo_temp_Copy2 = M_Min_fo_temp;
 		M_vfo2_temp_Copy2 = M_vfo2_temp;
 		for (register int i = 0; i < M_N_Interventions; i++)
 		{
@@ -1194,7 +1095,6 @@ class Maintenance
 		M_vfo2_temp = M_vfo2_temp_Copy2;
 		M_NI_Colocadas = M_NI_Colocadas_Copy2;
 		M_T_Temp_Risk_S = M_T_Temp_Risk_S_Copy2;
-		M_Min_fo_temp = M_Min_fo_temp_Copy2;
 		M_I_T = M_I_T_Copy2;
 		for (register int i = 0; i < M_N_Interventions; i++)
 		{
@@ -1218,7 +1118,6 @@ class Maintenance
 		M_I_T_Copy3 = M_I_T;
 		M_fo_temp_Copy3 = M_fo_temp;
 		M_vfo2_temp_Copy3 = M_vfo2_temp;
-		M_Min_fo_temp_Copy3 = M_Min_fo_temp;
 		for (register int i = 0; i < M_N_Interventions; i++)
 		{
 			M_Interventions_Colocada_Copy3[i] = M_Interventions_Colocada[i];
@@ -1240,7 +1139,6 @@ class Maintenance
 		M_NI_Colocadas = M_NI_Colocadas_Copy3;
 		M_T_Temp_Risk_S = M_T_Temp_Risk_S_Copy3;
 		M_I_T = M_I_T_Copy3;
-		M_Min_fo_temp = M_Min_fo_temp_Copy3;
 		for (register int i = 0; i < M_N_Interventions; i++)
 		{
 			M_Interventions_Colocada[i] = M_Interventions_Colocada_Copy3[i];
@@ -1255,17 +1153,6 @@ class Maintenance
 			M_Resources[j].CopyBack3();
 		}
 	};
-	double Maintenance::PathRelinking();
-	double Maintenance::CaminosDeAaB(pair<vector<int>, double>& Sol1, pair<vector<int>, double>& Sol2);
-	void SetPoolGoodSolutions(Maintenance &A)
-	{
-		M_PoolGoodSolutions = A.M_PoolGoodSolutions;
-		M_PoolGoodSolutions_diver = A.M_PoolGoodSolutions_diver;
-		M_PoolGoodSolutionsD = A.M_PoolGoodSolutionsD;
-		M_PoolGoodSolutions_diverD = A.M_PoolGoodSolutions_diverD;
-		M_MinPoolSolutions = A.M_MinPoolSolutions;
-		M_MinPoolSolutions_diver = A.M_MinPoolSolutions_diver;
-	}
 	inline void CopyBest(void)
 	{
 		M_Best_I_T = M_I_T;
@@ -1310,7 +1197,6 @@ class Maintenance
 	int Get_Iter(void) { return M_Iter; };
 	void Set_Iter(int a) { M_Iter=a; };
 	void Set_Iter_Grasp(int a) { M_Iter_Grasp=a; };
-	int Get_Iter_Grasp(void) { return M_Iter_Grasp; };
 	double Get_Best_Obj() { return M_Best_fo; };
 	double Get_Cota() { return M_Cota; };
 	timeb Get_Time_Initial() { return M_Time_Initial; };
@@ -1331,19 +1217,13 @@ class Maintenance
 	double Get_Time_Formulation1() { return M_Time_Modelo1; };
 	double Get_Time_Formulation2() { return M_Time_Modelo2; };
 	double Get_Time_Formulation3() { return M_Time_Modelo3; };
-	double CoeficienteRiesgoQuitando(int intervention, int tinicio);
-	double CoeficienteRiesgo(int intervention, int tinicio); 
-	double CoeficienteRiesgoIT(int intervention, int tinicio);
-
 	vector<Resource>& Get_Resources(void) { return M_Resources; };
 	vector<Intervention>& Get_Interventions(void) { return M_Interventions; };
 	vector<Season>& Get_Seasons(void) { return M_Seasons; };
 	vector<int>& Get_Scenarios_Number(void) { return M_Scenarios_number; };
 	list< vector< int> >& Get_Exclusions(void) { return M_Exclusions; };
 	//
-	double IntegerFormulationGRB(int tipo_pool);
-	int IntegerFormulationFullGRB_Reactive(int tipo_pool);
-	void LimpiarCoeficientes();
+
 	void CalcularSumasT(vector<double>& SumaT);
 
 	int AleatorizarIgualesListInterventions(int tipo);
@@ -1372,7 +1252,6 @@ class Maintenance
 	bool VerifySolution2();
 	void Constructive(int);
 	double FuncionObjetivo();
-	double FuncionObjetivoPenalizacion();
 	double FuncionObjetivo(vector<int> Interventions_T);
 	bool ColocarEnTiempo(int n_int);
 	bool ColocarEnTiempo(int n_int, int t);
@@ -1421,7 +1300,7 @@ class Maintenance
 	double MejoraIntercambiosMejorT();
 	bool MejoraIntercambiosFo2();
 	bool MejoraIntercambiosFo1Order();
-	double MejoraIntercambiosEjectionMejorada(int tipo);
+
 	inline void AddScenarios(int Nint);
 	inline void SubtractScenarios(int Nint);
 
@@ -1433,7 +1312,6 @@ class Maintenance
 	int ElegirMayor(int type);
 	int ElegirMayorAleatorizado(int type);
 	int ElegirMenorAleatorizadoSPG(int type);
-	int ElegirMenorTRecursos(int num_int);
 	int ElegidoMayorDif(void);
 	void QuitarRecursos(int n_int);
 	void AddRecursos(int n_int);
@@ -1454,12 +1332,8 @@ class Maintenance
 		}
 		return seed;
 	};
-	int M_Tipo_Quantiles = 2;
-	int M_Tipo_Coeficientes = 1;
 	//Cplex operator
 	int IntegerFormulation(int Val);
-		int IntegerFormulationEvaluar(int Val);
-	int IntegerFormulationOld(int tipo_pool);
 	void EjecutarValidadorPython(vector<int> & );
 	void LimpiarRiskTempS();
 	void LimpiarRiskTempS2();
@@ -1468,14 +1342,11 @@ class Maintenance
 	double FuncionObjetivoTemp(int ,int ti1,int tf1);
 	int ElegirMayorTFuncionObjetivo(int num_int);
 	int ElegirMayorAleatorizadoSPG(int type);
-	void InsertarGoodSolutions_Diver(list<pair<vector<int>, double>>& lista);
 	double SegundaParteFObj(int numero_i, int timeini, int timefin,double );
 	void ChapuzaDiversidad(string& file_to_read);
 	void CambiarSolution(int inter, int time);
 	void PonerAlFinalSolution(int inter, int time);
 	void leer_problem_wojson2(string& name_file);
-	int IntegerFormulationFullGRB(int tipo_pool);
-	int Numero_Objectives();
 	int ElegirMenor(int type);
 	//Para el beam search
 	void BeamSearch();
@@ -1490,7 +1361,6 @@ class Maintenance
 	double MejoraIntercambiosEjection(int );
 	bool MejoraIntercambiosFo1OrderFast();
 	bool MejoraIntercambiosFo1Fast();
-	int ElegirMenorRecursos(void);
 	double SimpleTabuMejorT();
 	void InsertarOrdenadoPool(double val, vector<int> sol, list<pair<vector<int>, double>>& lista);
 
@@ -1505,7 +1375,6 @@ class Maintenance
 	double PerturbarSolution(double fobjAntiguo);
 	bool comp_descending1(int i, int j);
 	double MejoraIntercambiosDosI(double);
-		double MejoraIntercambiosDosISent(double);
 	double VND(double &val);
 	void SetIntensification(bool a) { M_Intensification = a; };
 	void MejorarPoolSolutions();
@@ -1518,9 +1387,8 @@ class Maintenance
 	void MejorarPoolSolutions2(int i);
 	void CrearListasFormulations();
 	void PoolGoodSolutions(vector<int>&, double );
-	int RepararCplex(double fobjAntiguo);
+	double RepararCplex(double fobjAntiguo);
 	bool HaCambiadoT(int time, int duracion, vector<bool> &TiemposCambiado);
-	void Intensificar(int hilo);
 		
 };
 

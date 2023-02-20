@@ -10,9 +10,8 @@
 #include <iomanip>
 #include <iostream>
 #include <omp.h>
-
 //#include "json.h"
-//set<int> M_distintos_Global;
+
 using namespace std;
 
 int Global_Best_Objective_Function = MAXIMUM_INT_ROADEF; // 11266923; //2329354
@@ -31,15 +30,14 @@ int main(int argc, char **argv)
 	    file_idx2;
 	int Integer = -1;
 	int Type = 0;
-	int TeamId = 0, seed = 1, Seconds = 900,formulation=0;
+	int TeamId = 0, seed = 1, Seconds = 900;
 	int Doble = 2;
 	int Iter = 10;
 	int VND = 1;
 	int TipoBusqueda = 7;
 	int maxSeconds = 900;
-	int visible = 0;
-//	mainRC2020(argc, argv);
-
+	int visible = 1;
+	file_to_read = "A_set/A1"; //Procesamiento de los parametros
 	if ((argc == 1))
 	{
 		cout << "Team 56" << endl; //		printf("Team 56");
@@ -124,45 +122,28 @@ int main(int argc, char **argv)
 				sscanf(argv[2], "%d",
 				       &visible); //Type=0 is the usual //Type=1 is the new one
 			}
-			else if (strcmp(argv[1], "-Formulation") == 0)
-			{
-				sscanf(argv[2], "%d",
-					&formulation); //Type=0 is the usual //Type=1 is the new one
-			}
 			argc -= 2;
 			argv += 2;
 		}
 	}
 	struct timeb time_final, time_initial;
-
-	//	Doble = 0; //	DibujarOpenGL();
+	ftime(&time_initial);
+	const struct timeb time_ini = time_initial; //	Doble = 0; //	DibujarOpenGL();
 	vector<Maintenance> Problemas;
 	srand(seed);
 	Maintenance Problema(1); //		Problema.PruebaHash();
 	Problema.Set_Seed(seed);
-	Problema.Set_Tipo_Formulation(formulation);
 	nThreads = min(omp_get_max_threads(), nThreads);
 	Problema.SetNumberOfThreads(nThreads); //	Problema.leer_problem(file_to_read);
-
+	Problema.Set_Time_Initial(time_ini);
 	double tmp_first2 = 0; //	Problema.leer_problem_wojson(file_to_read);
 	Problema.leer_problem(
 	    file_to_read); //	Maintenance Problema2(1); //	Problema2.leer_problem_wojson(file_to_read); //		jobj = json_tokener_parse(argv[2]);
-	ftime(&time_initial);
-
-	struct timeb time_ini = time_initial; 
-	Problema.Set_Time_Initial(time_ini);
 	ftime(&time_final);
 	tmp_first2 = ((double)((time_final.time - Problema.Get_Time_Initial().time) * 1000 +
 	                       time_final.millitm - Problema.Get_Time_Initial().millitm)) /
 	             1000;
 	Problema.Set_Time_Leer(tmp_first2);
-	bool gurobi =true;
-	
-	if (gurobi==true)
-	Problema.SetCplex(false);
-	else
-		Problema.SetCplex(true);
-
 	if (!visible) printf("\n Time Reading %.3f", tmp_first2);
 	Problema.VectoresOrdenados();
 	Problema.CotaPrimeraParte();
@@ -196,10 +177,9 @@ int main(int argc, char **argv)
 		Problemas[NHilos].Set_Hilo(NHilos);
 		Problemas[NHilos].Set_Iter_Formulation(1);
 	}
-	int Total_Time_Intensification = 0;
 //	Problema.~Maintenance();
 	int M_Best_Hilo = 0;
-	if (nThreads < 1)
+	if (nThreads < 2)
 	{
 		if (TipoBusqueda == 7)
 		{
@@ -213,16 +193,12 @@ int main(int argc, char **argv)
 	}
 	else
 	{ //GRASP Inicial
-		int TiempoGrasp =
-		    min((maxSeconds / 10), 1) +
-		    tmp_first2; //		TiempoGrasp = 10; //PARA EL GRASP //PAra hacerlo con fopenmp
-		                //		TiempoGrasp = 300;
-
-		if (TiempoGrasp > maxSeconds)
-			TiempoGrasp = maxSeconds - tmp_first2;
+		int TiempoGrasp = min((maxSeconds / 10),60)+tmp_first2; //		TiempoGrasp = 10; //PARA EL GRASP //PAra hacerlo con fopenmp
+		if (TiempoGrasp>maxSeconds)
+			TiempoGrasp=maxSeconds-tmp_first2;
 #pragma omp parallel num_threads(nThreads)
 		{ //#pragma omp for schedule(static,1) nowait
-#pragma omp for schedule(dynamic, 1) nowait
+#pragma omp for schedule(dynamic, 1)  nowait 
 			for (int Global_Iter = 0; Global_Iter < nThreads; Global_Iter++)
 			{
 				struct timeb time_ini2;
@@ -239,25 +215,15 @@ int main(int argc, char **argv)
 					struct timeb time_ini21;
 					ftime(&time_ini21);
 					Problemas[Global_Iter].SetTotalTime(TiempoGrasp);
-//					Problemas[Global_Iter].GRASP();
+					Problemas[Global_Iter].GRASP();
 				}
 			}
 		}
-		int Iter_Grasp = 0;
-		for (int cont = 0; cont < nThreads; cont++)
-		{
-			Iter_Grasp += (Problemas[cont].Get_Iter() - Problemas[cont].Get_No_Sol());
-			//			Iter_Grasp+=Problemas[cont].Get_Iter();
-
-			Problemas[cont].Set_MGapPool(100);
-		}
-
 		M_Best_Hilo = 0;
 		for (int cont = 0; cont < nThreads; cont++)
 		{
-			if (!visible)
-				printf("\n Sol Hilo %d %.5f Iter %d\n", cont,
-				       Problemas[cont].Get_Best_Obj(), Problemas[cont].Get_Iter());
+			if (!visible) printf("\n Sol Hilo %d %.5f Iter %d\n", cont,
+			       Problemas[cont].Get_Best_Obj(), Problemas[cont].Get_Iter());
 			if (cont == 0)
 				continue;
 			if (Problemas[cont].Get_Best_Obj() < Problemas[M_Best_Hilo].Get_Best_Obj())
@@ -265,46 +231,23 @@ int main(int argc, char **argv)
 				M_Best_Hilo = cont;
 			}
 		}
-		Problemas[0].Set_Iter(Iter_Grasp);
-		//		goto saltar;
-		//Solve with gurobi
-		ftime(&time_initial);
-
-		time_ini = time_initial;
-		Problema.Set_Time_Initial(time_ini);
-		ftime(&time_final);
-		double tmp_first2 = ((double)((time_final.time - time_ini.time) * 1000 +
-		                       time_final.millitm - time_ini.millitm)) /
-		             1000;
-			if (!visible) printf("\n Time Grasp %.3f", tmp_first2);
-
-		if (Problemas[M_Best_Hilo].Get_Best_Solution().size() == 0 )
-		{
-			Problemas[0].SetReparar(false);
-			Problemas[0].IntegerFormulationGRB(true);
-			Problemas[0].PrintSolution(file_to_write);
-		}
-
-		else
-		{
-			Problemas[M_Best_Hilo].PrintSolution(file_to_write);
-			Problemas[0].Set_Best_Solution(Problemas[M_Best_Hilo].Get_Best_Solution());
-		}
-		ftime( &time_final);
-		double tmp_first3 = ((double)((time_final.time - time_ini.time) * 1000 +time_final.millitm - time_ini.millitm)) /1000;
-		Problemas[0].Set_Time_Formulation1(tmp_first3);
-		//Solve with gurobi
-		if (!visible) printf("\n Time Grasp+Leer+Gurobi %.3f\n", tmp_first3);
-		Problemas[0].Set_SolFase(1, Problemas[0].Get_Best_Obj());
-				ftime( &time_final); //	double tmp_first = ((double)((time_final.time - Problemas[M_Best_Hilo].Get_Time_Initial().time) * 1000 + time_final.millitm - Problemas[M_Best_Hilo].Get_Time_Initial().millitm)) / 1000;
+		if (!visible) printf("\n Time Grasp %.3f", tmp_first2);
+		Problemas[M_Best_Hilo].PrintSolution(file_to_write);
+		Problemas[0].Set_Best_Solution(Problemas[M_Best_Hilo].Get_Best_Solution());
+		ftime(
+		    &time_final); //	double tmp_first = ((double)((time_final.time - Problemas[M_Best_Hilo].Get_Time_Initial().time) * 1000 + time_final.millitm - Problemas[M_Best_Hilo].Get_Time_Initial().millitm)) / 1000;
 		double tmp_first4 = ((double)((time_final.time - time_ini.time) * 1000 +time_final.millitm - time_ini.millitm)) /1000;
 		int max_Iter = 1;
+		int Iter_Grasp = 0;
+		for (int cont = 0; cont < nThreads; cont++)
+		{
+			Iter_Grasp+=Problemas[cont].Get_Iter()-Problemas[cont].Get_No_Sol();
+			Problemas[cont].Set_MGapPool(100);
 
+
+		}
+		Problemas[0].Set_Iter(Iter_Grasp);
 		int Total_Time = maxSeconds - tmp_first4;
-		int Total_Time_Intensification = 0;
-		Total_Time_Intensification = Total_Time /10;
-		Total_Time = Total_Time- Total_Time_Intensification;
-//		Total_Time_Intensification = 5000;
 /*		max_Iter = 800 / tmp_first2;
 		if (max_Iter > 8)
 			max_Iter = 8;
@@ -329,18 +272,18 @@ int main(int argc, char **argv)
 		if (!visible) printf("\nIteraciones %d Tiempo por cada una %d\n", max_Iter,
 		       maxSeconds); //		maxSeconds = 10;
 		//Dos veces una corto y uno largo
-		if (Total_Time>15000) 
+		if (Total_Time>1000) 
 		{
 			max_Iter = 2;
 
 		}
-if (Total_Time>3600) max_Iter=3;
+if (Total_Time>36000) max_Iter=3;
 		if (!visible) printf("\nIteraciones %d Tiempo por cada una %d\n", max_Iter,
 		       maxSeconds); //		maxSeconds = 10;
 
 		for (int k = 0; k < nThreads; k++)
 		{
-			Problemas[k].SetTotalTime(Total_Time); 
+			Problemas[k].SetTotalTime(maxSeconds); 
 			Problemas[k].Set_Iter_Grasp(Iter_Grasp);
 		}
 		for (int Iter_Global = 1; Iter_Global <= max_Iter; Iter_Global++)
@@ -352,8 +295,6 @@ if (Total_Time>3600) max_Iter=3;
 					
 					Total_Time=900-tmp_first4;
 					Total_Time = Total_Time - 10;
-					Total_Time_Intensification = Total_Time / 5;
-					Total_Time -= Total_Time_Intensification;					
 					Problemas[0].Set_MGapPool(100);
 
 		
@@ -363,8 +304,6 @@ if (Total_Time>3600) max_Iter=3;
 				{
 					Total_Time=maxSeconds-900;
 					Total_Time = Total_Time - 10;
-					Total_Time_Intensification = Total_Time / 5;
-					Total_Time -= Total_Time_Intensification;
 					Problemas[0].Set_MGapPool(100);
 					Problemas[0].Set_Iter(Iter_Grasp);
 					//Quitar de Integer_Sol_Distintas las no visitadas
@@ -387,10 +326,8 @@ if (Total_Time>3600) max_Iter=3;
 			{
 				if (Iter_Global==1) 
 				{
-					Total_Time=1100-tmp_first4;
+					Total_Time=1400-tmp_first4;
 					Total_Time = Total_Time - 10;
-					Total_Time_Intensification = Total_Time / 5;
-					Total_Time -= Total_Time_Intensification;
 					Problemas[0].Set_MGapPool(100);
 					Problemas[0].Set_Iter(Iter_Grasp);		
 
@@ -398,9 +335,7 @@ if (Total_Time>3600) max_Iter=3;
 				if (Iter_Global==2) 
 				{
 					
-					Total_Time = 900 - 10;	
-					Total_Time_Intensification = Total_Time / 5;
-					Total_Time -= Total_Time_Intensification;
+					Total_Time = 600 - 10;	
 					Problemas[0].Set_MGapPool(1000);
 					Problemas[0].Set_Iter(Iter_Grasp);					
 					list<pair<vector<int>, double>> tempk = Problemas[0].GetPoolSolutions();
@@ -416,8 +351,6 @@ if (Total_Time>3600) max_Iter=3;
 				{
 					Total_Time=maxSeconds-2000;
 					Total_Time = Total_Time - 10;
-					Total_Time_Intensification = Total_Time / 5;
-					Total_Time -= Total_Time_Intensification;
 					Problemas[0].Set_MGapPool(1000);
 					Problemas[0].Set_Iter(Iter_Grasp);
 					list<pair<vector<int>, double>> tempk = Problemas[0].GetPoolSolutions();
@@ -450,27 +383,10 @@ if (Total_Time>3600) max_Iter=3;
 				Problemas[k].Set_Time_Initial(time_ini2);
 				Problemas[k].Set_Iter_Formulation(Iter_Global);
 			}
-//			Problemas[0].SetTotalTime(36000);
-			if (nThreads > 0 && TipoBusqueda == 7)
-			{
+
+			if (nThreads > 1 && TipoBusqueda == 7)
 				Problemas[0].CrearListasFormulations();
-				//Cambiado para las formulaciones
-			}
-			
-				
-		Problemas[0].Set_SolFase(2, Problemas[0].Get_Best_Obj());
-		ftime( &time_final);
-		tmp_first3 = ((double)((time_final.time - time_ini.time) * 1000 +time_final.millitm - time_ini.millitm)) /1000;
-		if (Problema.Get_Tipo_Formulation()>0)
-			maxSeconds = 0;
-		//Solve with gurobi
-		if (!visible) 
-			{
-			if (gurobi==false)
-			printf("\n Time CPlex %.3f\n", tmp_first3);
-			else
-			printf("\n Time Gurobi %.3f\n", tmp_first3);
-			}
+			printf("Tiempo %d", Total_Time);
 			if (Problemas[0].EncuentraSolutions())
 			{
 				for (int i = 1; i < nThreads; i++)
@@ -478,7 +394,14 @@ if (Total_Time>3600) max_Iter=3;
 					Problemas[i].SetListaSolucionesInteger(
 					    Problemas[0].GetListaSolucionesInteger(i));
 				}
-			}  //PAra hacerlo con fopenmp
+			} /*		for (int i = 1; i < nThreads; i++) 
+			{
+				Problemas[0].Insertar_Distintos(Problemas[i].GetDistintos());
+			}
+			for (int i = 1; i < nThreads; i++) 
+			{
+				Problemas[i].Insertar_Distintos(Problemas[0].GetDistintos());
+			}*/ //PAra hacerlo con fopenmp
 #pragma omp parallel num_threads(nThreads)
 			{
 #pragma omp for schedule(static, 1)   nowait //#pragma omp for schedule(dynamic, 1)
@@ -493,65 +416,10 @@ if (Total_Time>3600) max_Iter=3;
 						ftime(&time_ini21);
 						Problemas[Global_Iter].SetTotalTime(Total_Time);
 						Problemas[Global_Iter].SetIntensification(true);
-						Problemas[Global_Iter].MejorarPoolSolutions2(Global_Iter);
+						Problemas[Global_Iter].MejorarPoolSolutions2(
+						    Global_Iter);
 					}
 				}
-			}
-			Total_Time_Intensification = Total_Time_Intensification / 4;
-			/* if (gurobi)
-			{
-				Problemas[0].Intensificar_Gurobi();
-			}
-			else
-			{*/			
-			for (int i = 0; i < 4; i++)
-			{
-				if (!visible) printf("\n Intensificar XXXXXX %d\n", i);
-				for (int ki1 = 1; ki1 < nThreads; ki1++)
-				{
-					Problemas[0].InsertarGoodSolutions(Problemas[ki1].M_PoolGoodSolutions);
-				}	
-
-				for (int ki1 = 1; ki1 < nThreads; ki1++)
-				{
-					Problemas[ki1].SetPoolGoodSolutions(Problemas[0]);
-
-				}
-
-		ftime( &time_final);
-		tmp_first3 = ((double)((time_final.time - time_ini.time) * 1000 +time_final.millitm - time_ini.millitm)) /1000;
-		//Solve with gurobi
-		if (!visible) printf("\n Time CPlexMejorar %.3f\n", tmp_first3);
-		Problemas[0].Set_SolFase(3, Problemas[0].Get_Best_Obj());
-				ftime( &time_final); //	double tmp_first = ((double)((time_final.time - Problemas[M_Best_Hilo].Get_Time_Initial().time) * 1000 + time_final.millitm - Problemas[M_Best_Hilo].Get_Time_Initial().millitm)) / 1000;
-
-#pragma omp parallel num_threads(nThreads)
-			{
-#pragma omp for schedule(static, 1) nowait //#pragma omp for schedule(dynamic, 1)
-				for (int Global_Iter = 0; Global_Iter < nThreads; Global_Iter++)
-				{
-					struct timeb time_ini_3;
-					ftime(&time_ini_3);
-					double tmp_first3 =
-					    ((double)((time_ini_3.time -
-						       Problemas[0].Get_Time_Initial().time) *
-							  1000 +
-						      time_ini_3.millitm -
-						      Problemas[0].Get_Time_Initial().millitm)) /
-					    1000;
-					if (tmp_first3 < maxSeconds)
-					{
-						struct timeb time_ini21;
-						ftime(&time_ini21);
-						Problemas[Global_Iter].Set_Time_Initial(time_ini21);
-						Problemas[Global_Iter].SetTotalTime(
-						    Total_Time_Intensification);
-						Problemas[Global_Iter].SetIntensification(true);
-						Problemas[Global_Iter].Intensificar(Global_Iter);
-					}
-				}
-			}
-//		}
 			}
 			M_Best_Hilo = 0;
 			for (int cont = 0; cont < nThreads; cont++)
@@ -571,7 +439,7 @@ if (Total_Time>3600) max_Iter=3;
 			Problemas[M_Best_Hilo].PrintSolution(file_to_write);
 		}
 	}
-	Problemas[0].Set_SolFase(4, Problemas[0].Get_Best_Obj());
+
 
 
 	//	string name2 = file_to_read+"Resultados.txt";
@@ -600,7 +468,7 @@ if (Total_Time>3600) max_Iter=3;
 	fprintf(
 	    file,
 	    " BI %d TI %d C %.5f E %d I %d R %d T %d S %d MM %.5f VND %d TB %d Hilo %d  M %d #P %d "
-	    "#Q %d #M %d NSol %d I %.5f Q %.5f Max  %.5f  Alpha %.5f Quantile %.5f SF1 %.5f SF2 %.5f SF3 %.5f SF4 %.5f\n",
+	    "#Q %d #M %d NSol %d I %.5f Q %.5f Max  %.5f  Alpha %.5f Quantile %.5f\n",
 	    Problemas[M_Best_Hilo].Get_Best_Iter(), Problemas[M_Best_Hilo].Get_Iter(),
 	    Problemas[M_Best_Hilo].Get_Cota(), Problemas[M_Best_Hilo].Get_NExclusions(),
 	    Problemas[M_Best_Hilo].Get_NInterventions(), Problemas[M_Best_Hilo].Get_NResources(),
@@ -610,8 +478,7 @@ if (Total_Time>3600) max_Iter=3;
 	    Problemas[0].Get_Sol_Pool(), Problemas[0].Get_Sol_PoolQ(), Problemas[0].Get_Sol_PoolM(),
 	    Problemas[M_Best_Hilo].Get_No_Sol(), Problemas[0].Get_Sol_I(), Problemas[0].Get_Sol_Q(),
 	    Problemas[M_Best_Hilo].Get_Sol_M(), Problemas[M_Best_Hilo].Get_Alpha(),
-	    Problemas[0].Get_Quantile(),
-		Problemas[0].Get_SolFase(1),Problemas[0].Get_SolFase(2),Problemas[0].Get_SolFase(3),Problemas[0].Get_SolFase(4));
+	    Problemas[0].Get_Quantile());
 
 	//	file << " BI " << Problemas[M_Best_Hilo].Get_Best_Iter()<< " TI "<<Problemas[M_Best_Hilo].Get_Iter() <<" C "<<Problemas[M_Best_Hilo].Get_Cota() <<" E  "<< Problemas[M_Best_Hilo].Get_NExclusions()<<" I  "<<Problemas[M_Best_Hilo].Get_NInterventions()<<" R "<<Problemas[M_Best_Hilo].Get_NResources()<<" T "<<Problema.Get_T()<<" S "<<Problemas[M_Best_Hilo].Get_Total_Scenarios()<< " Mm "<< Problemas[M_Best_Hilo].Get_Max_Min_Risk()/(double)Problemas[M_Best_Hilo].Get_T() << " VND "<< VND<< " TB " <<TipoBusqueda<< "Dnd"<<M_Best_Hilo <<endl;
 	//	file <<  " " << Problema.Get_Best_Obj()<< " "<< tmp_first << " " << Problema.Get_Best_Iter() <<" "<<Problema.Get_Cota() <<"E  "<< Problema.Get_NExclusions()<<"I  "<<Problema.Get_NInterventions()<<"R "<<Problema.Get_NResources()<<"T "<<Problema.Get_T()<<"S "<<Problema.Get_Total_Scenarios()<<endl;
@@ -619,7 +486,6 @@ if (Total_Time>3600) max_Iter=3;
 	fclose(file);
 
 #else
-//saltar:
 	string name2 = "Resultados.txt";
 	FILE *file = fopen(name2.c_str(), "a+");
 	//	file << endl;
@@ -630,8 +496,8 @@ if (Total_Time>3600) max_Iter=3;
 	                   1000;
 
 	fprintf(file,
-	        "%s ITG %d FSI %.5f FTI %.3f FO1 %.5f FO2 %.5f T2 %f T3 %f FO %.5f FO1 %.5f FO2 %.5f T %f",
-	        file_to_read.c_str(), Problemas[0].Get_Iter_Grasp(), Problemas[M_Best_Hilo].Get_Sol_Formulation(),
+	        "%s FSI %.5f FTI %.3f FO1 %.5f FO2 %.5f T2 %f T3 %f FO %.5f FO1 %.5f FO2 %.5f T %f",
+	        file_to_read.c_str(), Problemas[M_Best_Hilo].Get_Sol_Formulation(),
 	        Problemas[M_Best_Hilo].Get_Time_Formulation1(),
 	        Problemas[M_Best_Hilo].Get_Obj_Formulation1(),
 	        Problemas[M_Best_Hilo].Get_Obj_Formulation2(),
@@ -641,7 +507,7 @@ if (Total_Time>3600) max_Iter=3;
 	fprintf(
 	    file,
 	    " BI %d TI %d C %.5f E %d I %d R %d T %d S %d MM %.5f VND %d TB %d Hilo %d  M %d #P %d "
-	    "#Q %d #M %d NSol %d I %.5f Q %.5f Max  %.5f  Alpha %.5f Quantile %.5f SF1 %.5f SF2 %.5f SF3 %.5f SF4 %.5f\n",
+	    "#Q %d #M %d NSol %d I %.5f Q %.5f Max  %.5f  Alpha %.5f Quantile %.5f\n",
 	    Problemas[M_Best_Hilo].Get_Best_Iter(), Problemas[M_Best_Hilo].Get_Iter(),
 	    Problemas[M_Best_Hilo].Get_Cota(), Problemas[M_Best_Hilo].Get_NExclusions(),
 	    Problemas[M_Best_Hilo].Get_NInterventions(), Problemas[M_Best_Hilo].Get_NResources(),
@@ -651,14 +517,13 @@ if (Total_Time>3600) max_Iter=3;
 	    Problemas[0].Get_Sol_Pool(), Problemas[0].Get_Sol_PoolQ(), Problemas[0].Get_Sol_PoolM(),
 	    Problemas[M_Best_Hilo].Get_No_Sol(), Problemas[0].Get_Sol_I(), Problemas[0].Get_Sol_Q(),
 	    Problemas[M_Best_Hilo].Get_Sol_M(), Problemas[M_Best_Hilo].Get_Alpha(),
-	    Problemas[0].Get_Quantile(), Problemas[0].Get_SolFase(1), Problemas[0].Get_SolFase(2),
-	    Problemas[0].Get_SolFase(3), Problemas[M_Best_Hilo].Get_Best_Obj());
+	    Problemas[0].Get_Quantile());
 
 	//	file << " BI " << Problemas[M_Best_Hilo].Get_Best_Iter()<< " TI "<<Problemas[M_Best_Hilo].Get_Iter() <<" C "<<Problemas[M_Best_Hilo].Get_Cota() <<" E  "<< Problemas[M_Best_Hilo].Get_NExclusions()<<" I  "<<Problemas[M_Best_Hilo].Get_NInterventions()<<" R "<<Problemas[M_Best_Hilo].Get_NResources()<<" T "<<Problema.Get_T()<<" S "<<Problemas[M_Best_Hilo].Get_Total_Scenarios()<< " Mm "<< Problemas[M_Best_Hilo].Get_Max_Min_Risk()/(double)Problemas[M_Best_Hilo].Get_T() << " VND "<< VND<< " TB " <<TipoBusqueda<< "Dnd"<<M_Best_Hilo <<endl;
 	//	file <<  " " << Problema.Get_Best_Obj()<< " "<< tmp_first << " " << Problema.Get_Best_Iter() <<" "<<Problema.Get_Cota() <<"E  "<< Problema.Get_NExclusions()<<"I  "<<Problema.Get_NInterventions()<<"R "<<Problema.Get_NResources()<<"T "<<Problema.Get_T()<<"S "<<Problema.Get_Total_Scenarios()<<endl;
 
 	fclose(file);
-	bool revisa = false;
+	bool revisa = true;
 	if (!Problemas[M_Best_Hilo].Get_ChallengeMode() || revisa == true)
 	{
 		if (Problemas[M_Best_Hilo].Get_Best_Solution().size() == 0)

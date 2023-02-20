@@ -4145,11 +4145,11 @@ double Maintenance::FuncionObjetivoTemp( int ti1, int tf1)
 	return total;
 }
 
-double Maintenance::FuncionObjetivoPenalizacion()
+double Maintenance::FuncionObjetivo()
 {
 
 
-	vector<int> NumIT(M_T);
+
   // Primero da un warning de que interventions no están colocadas
 	for (size_t i=0; i < M_Interventions.size(); i++)
 	{
@@ -4167,17 +4167,13 @@ double Maintenance::FuncionObjetivoPenalizacion()
 
 	for (size_t i=0; i < M_Interventions.size(); i++)
 	{
-		
 		if (M_I_T[i] < 0) continue;
 		double acumuladoT=0;
 		for (int t = M_Interventions[i].Get_T_Temp(); t < M_Interventions[i].Get_T_F_Temp(); t++)
 		{
-			M_FreqIT[i][t]++;
-			NumIT[t]++;
 			double acumuladoT2=0;
 			for (int si = 0; si < M_Scenarios_number[t]; si++)
 			{
-
 				acumuladoT2 += M_Interventions[i].Get_RiskN(t, M_Interventions[i].Get_T_Temp(), si);
 //				InsertarOrdenadoTRisk(t, M_Interventions[i].Get_Risk()[t][M_Interventions[i].Get_T_Temp()][si]);
 
@@ -4191,7 +4187,6 @@ double Maintenance::FuncionObjetivoPenalizacion()
 		
 		fobjetivo_first2 += acumuladoT;
 	}
-	M_NumIT = NumIT;
 	double fobje2 = 0;
 	for (size_t i=0; i < M_Interventions.size(); i++)
 	{
@@ -4209,111 +4204,25 @@ double Maintenance::FuncionObjetivoPenalizacion()
 	{
 
 		int pos = 0;
-		double dif = (double)(1 - M_Quantile) / (double)2;
 		if (M_Scenarios_number[i] > 0)
 		{
 			pos = ceil(M_Scenarios_number[i] * M_Quantile) - 1;
 		}
 		else continue;
 		double suma=accumulate(M_T_Temp_Risk_S2[i].begin(), M_T_Temp_Risk_S2[i].end(), 0.0);
-		M_T_Temp_Risk_FO_Suma[i] = suma;
 		double media = suma / M_Scenarios_number[i];
-		auto risk_scenario = M_T_Temp_Risk_S2[i];
 		nth_element(M_T_Temp_Risk_S2[i].begin(), M_T_Temp_Risk_S2[i].begin() + pos, M_T_Temp_Risk_S2[i].end());
 //		double cuantil1= M_T_Temp_Risk_S[i][pos];
 //		 sort(M_T_Temp_Risk_S[i].begin(), M_T_Temp_Risk_S[i].end());
 		 double cuantil = M_T_Temp_Risk_S2[i][pos];
 		 double excess = max((double) 0, (cuantil - media));
-		 int index = ceil(M_Quantile * M_Scenarios_number[i]) - 1;
-		 int index_arriba = ceil((M_Quantile+dif) * M_Scenarios_number[i]) - 1;
-		 nth_element(M_T_Temp_Risk_S2[i].begin(), M_T_Temp_Risk_S2[i].begin() + index_arriba,
-		             M_T_Temp_Risk_S2[i].end());
-		 double cuantil_arriba = M_T_Temp_Risk_S2[i][index_arriba];
-		 int index_abajo = ceil((M_Quantile - dif) * M_Scenarios_number[i]) - 1;
-		 nth_element(M_T_Temp_Risk_S2[i].begin(),
-		             M_T_Temp_Risk_S2[i].begin() + index_abajo, M_T_Temp_Risk_S2[i].end());
-		 double cuantil_abajo= M_T_Temp_Risk_S2[i][index_abajo];
 		 fobjetivo_first3 += media;
 		 fobjetivo_second += excess;
-		 M_Excess[i] = excess ;
-		 //Penalizacion
-		 double umbral = 0.2;
-		 int scenarios_penalizo = 0;
-		 /* for (auto s = 0; s < M_Scenarios_number[i]; s++)
-		 {
-			 M_Scenario_Activo[i][s] = true;
-			 if ((risk_scenario[s] > cuantil - (umbral * excess)) &&
-			     (risk_scenario[s] < cuantil + (umbral * excess)))
-				 scenarios_penalizo++;
-		 }*/
-		
-		 
-		 if (excess > 0) 
-		 {
-			 double vp = (excess) / (M_Scenarios_number[i] - index);
-//			 vp = (excess) / (scenarios_penalizo);
-		//	 double vp2 = (excess) /(M_Scenarios_number[i]- (M_Scenarios_number[i] - index));
-
-			 vp = vp * M_Scenarios_number[i];
-		//	 vp2 = vp2 * M_Scenarios_number[i];
-			 for (auto s = 0; s < M_Scenarios_number[i]; s++)
-			 {
-
-//				 if (risk_scenario[s] > cuantil )
-//				 {
-					 
-//					 if (risk_scenario[s] > (cuantil + 0.25*excess))
-//						 continue;
-// 
-						 //					 if (M_Freq[i][s] == 0)
-//					 {
-if (risk_scenario[s] > cuantil_abajo && risk_scenario[s] < cuantil_arriba)
-					{
-	//				if ((risk_scenario[s] > cuantil - (umbral * excess)) &&
-//				(risk_scenario[s] < cuantil + (umbral * excess)))
-//{
-	if (M_Tipo_Coeficientes != 3)
-		M_PenalScen[i][s] = M_PenalScen[i][s] + vp;
-	else
-		M_PenalScen[i][s] = max(M_PenalScen[i][s], vp);
-						 M_Freq[i][s]++;
-//					 }
-					 M_Scenario_Activo[i][s] = false;
-				 }
-				 /*
-				 if (risk_scenario[s] <= cuantil)
-				 {
-					 M_PenalScen[i][s] = M_PenalScen[i][s] + vp2;
-					 M_Freq[i][s]++;
-					 M_Scenario_Activo[i][s] = false;
-				 }	*/			 
-
-			 }
-
-		 }
-
-
-
-
 //		 if (M_vfo2_temp[i]<excess - 0.01 || M_vfo2_temp[i]>excess + 0.01)
 //			 Problema(122);
 	}
-
-	for (size_t i = 0; i < M_Interventions.size(); i++)
-	{
-
-		if (M_I_T[i] < 0)
-			continue;
-		for (int t = M_Interventions[i].Get_T_Temp(); t < M_Interventions[i].Get_T_F_Temp();
-		     t++)
-		{
-			M_PenalScenIT[i][t] += (M_Excess[t]/NumIT[t]);
-		}
-	}
 	double total = M_Alpha * (fobjetivo_first3 / (double)M_T) + (1 - M_Alpha) * (fobjetivo_second / (double)M_T);
-	if (!M_Challenge_Mode)
-		printf("Primera Parte3 %.3f Segunda Parte %.3f Total %.3f\n", fobjetivo_first3 / (double)M_T * 0.5, fobjetivo_second / (double)M_T * 0.5, total);
-//		cout << "Primera Parte3 " << fobjetivo_first3 / (double)M_T << " segunda parte " << fobjetivo_second/(double)M_T << " Total "<< total << " Tipo " << M_Tipo<<endl;
+	if (!M_Silent) cout << "Primera Parte3 " << fobjetivo_first3 / (double)M_T << " segunda parte " << fobjetivo_second/(double)M_T << " Total "<< total << " Tipo " << M_Tipo<<endl;
 //	cout << "Primera Parte3 " << fobjetivo_first3 / (double)M_T << " segunda parte " << fobjetivo_second / (double)M_T << " Total " << total << " Tipo " << M_Tipo << endl;
 
 
@@ -4328,106 +4237,6 @@ if (risk_scenario[s] > cuantil_abajo && risk_scenario[s] < cuantil_arriba)
 	return total;
 
 }
-double Maintenance::FuncionObjetivo()
-{
-
-	// Primero da un warning de que interventions no están colocadas
-	for (size_t i = 0; i < M_Interventions.size(); i++)
-	{
-		if (M_I_T[i] < 0)
-			cout << "La intervention " << i << "no está colocada" << endl;
-	}
-	//Parte del riesgo acumulado
-	//
-	LimpiarRiskTempS2();
-	//
-
-	double fobjetivo_first2 = 0;
-
-	for (size_t i = 0; i < M_Interventions.size(); i++)
-	{
-		if (M_I_T[i] < 0)
-			continue;
-		double acumuladoT = 0;
-		for (int t = M_Interventions[i].Get_T_Temp(); t < M_Interventions[i].Get_T_F_Temp();
-		     t++)
-		{
-			double acumuladoT2 = 0;
-			for (int si = 0; si < M_Scenarios_number[t]; si++)
-			{
-				acumuladoT2 += M_Interventions[i].Get_RiskN(
-				    t, M_Interventions[i].Get_T_Temp(), si);
-				//				InsertarOrdenadoTRisk(t, M_Interventions[i].Get_Risk()[t][M_Interventions[i].Get_T_Temp()][si]);
-
-				M_T_Temp_Risk_S2[t][si] += M_Interventions[i].Get_RiskN(
-				    t, M_Interventions[i].Get_T_Temp(), si);
-
-				//				kktot += M_Interventions[i].Get_Risk()[t][M_Interventions[i].Get_T_Temp()][si];
-			}
-			acumuladoT2 = acumuladoT2 / M_Scenarios_number[t];
-			acumuladoT += acumuladoT2;
-		}
-
-		fobjetivo_first2 += acumuladoT;
-	}
-	double fobje2 = 0;
-	for (size_t i = 0; i < M_Interventions.size(); i++)
-	{
-		if (M_I_T[i] < 0)
-			continue;
-
-		fobje2 += M_Interventions[i].Get_RiskC(M_Interventions[i].Get_T_Temp());
-		double dif = M_Interventions[i].Get_RiskC(M_Interventions[i].Get_T_Temp()) -
-		             M_Interventions[i].Get_Min_Risk();
-	}
-	double fobjetivo_first3 = 0;
-	double fobjetivo_second = 0;
-
-	for (int i = 0; i < M_T; i++)
-	{
-
-		int pos = 0;
-		if (M_Scenarios_number[i] > 0)
-		{
-			pos = ceil(M_Scenarios_number[i] * M_Quantile) - 1;
-		}
-		else
-			continue;
-		double suma =
-		    accumulate(M_T_Temp_Risk_S2[i].begin(), M_T_Temp_Risk_S2[i].end(), 0.0);
-		M_T_Temp_Risk_FO_Suma[i] = suma;
-		double media = suma / M_Scenarios_number[i];
-		nth_element(M_T_Temp_Risk_S2[i].begin(), M_T_Temp_Risk_S2[i].begin() + pos,
-		            M_T_Temp_Risk_S2[i].end());
-		//		double cuantil1= M_T_Temp_Risk_S[i][pos];
-		//		 sort(M_T_Temp_Risk_S[i].begin(), M_T_Temp_Risk_S[i].end());
-		double cuantil = M_T_Temp_Risk_S2[i][pos];
-		double excess = max((double)0, (cuantil - media));
-		fobjetivo_first3 += media;
-		fobjetivo_second += excess;
-		//		 if (M_vfo2_temp[i]<excess - 0.01 || M_vfo2_temp[i]>excess + 0.01)
-		//			 Problema(122);
-	}
-	double total = M_Alpha * (fobjetivo_first3 / (double)M_T) +
-	               (1 - M_Alpha) * (fobjetivo_second / (double)M_T);
-	if (!M_Silent)
-		cout << "Primera Parte3 " << fobjetivo_first3 / (double)M_T << " segunda parte "
-		     << fobjetivo_second / (double)M_T << " Total " << total << " Tipo " << M_Tipo
-		     << endl;
-	//	cout << "Primera Parte3 " << fobjetivo_first3 / (double)M_T << " segunda parte " << fobjetivo_second / (double)M_T << " Total " << total << " Tipo " << M_Tipo << endl;
-
-	/*	for (size_t i=0; i < M_Interventions.size(); i++)
-	{
-		if (M_Interventions_Colocada[i] == false) continue;
-		fobjetivo_first += M_Interventions[i].Get_RiskC()[M_Interventions[i].Get_T_Temp()];
-	}
-	cout << "Segunda Parte " << fobjetivo_first / (double)M_T;
-	*/
-	//	M_fo_temp = total;
-	return total;
-}
-
-
 double Maintenance::FuncionObjetivo(vector<int> Interventions_T)
 {
 	// Primero da un warning de que interventions no están colocadas
@@ -4499,71 +4308,6 @@ double Maintenance::FuncionObjetivo(vector<int> Interventions_T)
 	return total;
 
 }
-void Maintenance::InsertarGoodSolutions(list<pair<vector<int>, double>> &lista)
-{
-
-	for (list<pair<vector<int>, double>> ::iterator it = lista.begin(); it != lista.end(); it++)
-	{
-
-//		M_I_T = (*it).first;
-		PoolGoodSolutions( (*it).first,(*it).second);
-	}
-}
-void Maintenance::InsertarGoodSolutions_Diver(list<pair<vector<int>, double>> &lista)
-{
-
-	for (list<pair<vector<int>, double>> ::iterator it2 = lista.begin(); it2 != lista.end(); it2++)
-	{
-
-
-		bool distinta = true;
-		int distan = 0;
-		for (list<pair<vector<int>, double>> ::iterator it = M_PoolGoodSolutions_diver.begin(); distinta!=false && it != M_PoolGoodSolutions_diver.end(); it++)
-		{
-			distan = Distancia((*it2).first, (*it).first);
-			if (distan < M_MinDistintosPool) 
-				distinta = false;
-		}
-	for (list<pair<vector<int>, double>> ::iterator it = M_PoolGoodSolutions.begin(); distinta!=false && it != M_PoolGoodSolutions.end(); it++)
-		{
-			distan = Distancia((*it2).first, (*it).first);
-			if (distan < M_MinDistintosPool) 
-				distinta = false;
-		}
-		if (distinta == false)
-		{
-
-			return;
-		}
-
-		for (list<pair<vector<int>, double>> ::iterator it = M_PoolGoodSolutions_diver.begin(); it != M_PoolGoodSolutions_diver.end(); it++)
-		{
-			if (((*it2).second) < ((*it).second - __FLT_EPSILON__))
-			{
-
-				pair<vector<int>, double> p((*it).first,(*it2).second);
-				M_PoolGoodSolutions_diver.insert(it, p);
-				if (M_PoolGoodSolutions_diver.size() > M_SizePoolSolutions)
-				{
-
-					M_PoolGoodSolutions_diver.pop_back();
-					M_MinPoolSolutions_diver = M_PoolGoodSolutions_diver.back().second;
-				}
-
-				return;
-			}
-		}
-
-		if ( M_PoolGoodSolutions_diver.size() < M_SizePoolSolutions)
-		{
-
-			pair<vector<int>, double> p((*it2).first,(*it2).second);
-			M_PoolGoodSolutions_diver.push_back(p);
-			return;
-		}
-
-	}
-}
 void Maintenance::InsertarOrdenadoPool(double val, vector<int> sol, list<pair<vector<int>, double>>& lista)
 {
 //	PoolGoodSolutions(sol, val);
@@ -4572,9 +4316,6 @@ void Maintenance::InsertarOrdenadoPool(double val, vector<int> sol, list<pair<ve
 	M_distintos.insert(hash_operator(M_I_T));
 	if (ndistintos == M_distintos.size())
 		return;*/
-
-	ActualizarMejorSolution(val, 1001);
-
 	for (list<pair<vector<int>,double>> ::iterator it =lista.begin(); it != lista.end(); it++)
 	{
 		if ((*it).second < val - __FLT_EPSILON__)
@@ -4667,7 +4408,7 @@ void Maintenance::VectoresOrdenados(void)
 {
 
 	//Para la función objetivo
-
+	
 	M_T_Temp_Risk.clear();
 	M_T_Temp_Risk_S.clear();
 	vector<double> suma(M_T);
@@ -4689,62 +4430,29 @@ void Maintenance::VectoresOrdenados(void)
 		M_T_M4[i] = true;
 	}
 	vector<vector<double>> p1(M_T);
-	vector<vector<int>> pint(M_T);
 	M_T_Temp_Risk_S = p1;
 	M_T_Temp_Risk_S2 = p1;
-	M_Coef = p1;
-	M_PenalScen = p1;
-	M_Best_Coef = p1;
-	M_Best_Freq = p1;
+
 	M_T_Temp_Risk_FO = p1;
-	vector<vector<bool>> pbool(M_T);
-	M_Scenario_Activo = pbool;
 	vector<double> kk(M_T);
-	
-	M_T_Temp_Risk_FO_Suma = kk;
-	for (int i = 0; i < M_N_Interventions; i++) 
-	{
-		M_FreqIT.push_back(vector<int> (M_T));
-		M_PenalScenIT.push_back(vector<double> (M_T));
-		M_CoefIT.push_back(vector<double>(M_T));
-	}
+	M_T_Temp_Risk_FO_Suma=kk;
+
 	for (int i = 0; i < M_T; i++)
 	{
-		M_NumIT.push_back(0);
-		M_Excess.push_back(0);
-		M_ExcessXI.push_back(0);
-		M_Best_Quantile.push_back(0);
-		M_Best_Media.push_back(0);
 		M_T_Excess.push_back(i);
 		M_vfo2_temp.push_back(0);
 		M_vfo2_temp_Copy.push_back(0);
 		M_vfo2_temp_Copy2.push_back(0);
 		M_vfo2_temp_Copy3.push_back(0);
 		M_Ivfo2_temp.push_back(i);
-		M_Best_Quantile.push_back(0);
-		M_Best_Media.push_back(0);
 
 		if (M_T_Temp_Risk_S[i].size() == 0)
 		{
 			vector<double> p(M_Scenarios_number[i]);
-			vector<int> p_int(M_Scenarios_number[i]);
-			vector<bool> p_bool(M_Scenarios_number[i]);
 			M_T_Temp_Risk_S[i] = p;
 			M_T_Temp_Risk_S2[i] = p;
 
 			M_T_Temp_Risk_FO[i] = p;
-			M_Scenario_Activo[i] = p_bool;
-			M_Coef[i] = p;
-			M_Freq.push_back(p_int);
-			M_PenalScen[i] = p;
-			M_Best_Coef[i] = p;
-			M_Best_Freq[i] = p;
-		}
-		for (int t = 0; t < M_Scenarios_number[i]; t++) 
-		{
-			M_Scenario_Activo[i][t]=(true);
-			M_Coef[i][t] = 1;
-			M_Freq[i][t] = 0;
 
 		}
 	}
@@ -4775,14 +4483,14 @@ void Maintenance::VectoresOrdenados(void)
 	{
 		M_I_Seasons.push_back(-1);
 		M_Interventions_Colocada.push_back(-1);
-		//		M_Best_I_T.push_back(-1);
+//		M_Best_I_T.push_back(-1);
 		M_Interventions_Dif.push_back(j);
 		M_I_T_Copy3.push_back(-1);
 		M_I_T_Copy2.push_back(-1);
 		M_I_T_Copy.push_back(-1);
 		M_I_T.push_back(-1);
-		//		M_I_T_For.push_back(-1);
-		//		M_I_T_ForQ.push_back(-1);
+//		M_I_T_For.push_back(-1);
+//		M_I_T_ForQ.push_back(-1);
 		M_Vec_Alea_I.push_back(j);
 		M_Interventions_T.push_back(-1);
 		M_Interventions_T_Copy.push_back(-1);
@@ -4798,43 +4506,24 @@ void Maintenance::VectoresOrdenados(void)
 		M_Interventions_Out_Ordenada.push_back(j);
 		M_Interventions_Regret.push_back(j);
 		M_Interventions_Risk_Temp.push_back(j);
-		//InsertarOrdenado(M_Interventions_Regret, j, M_Interventions[j].Get_Regret(), false);
-		double temp = (double)M_Interventions[j].Get_Exclusions().size() * (double)M_T +
-		              (double)M_Interventions[j].Get_Min_Delta() +
-		              M_Interventions[j].Get_Min_Workload();
+//InsertarOrdenado(M_Interventions_Regret, j, M_Interventions[j].Get_Regret(), false);
+		double temp = (double)M_Interventions[j].Get_Exclusions().size() * (double)M_T + (double)M_Interventions[j].Get_Min_Delta() + M_Interventions[j].Get_Min_Workload();
 		InsertarOrdenado(M_Interventions_Exclusions, j, temp, false);
-		InsertarOrdenado(M_Interventions_MinW, j, M_Interventions[j].Get_Min_Workload(),
-		                 false);
-		InsertarOrdenado(M_Interventions_MinR, j, M_Interventions[j].Get_Min_Risk(), false);
-		InsertarOrdenado(M_Interventions_MinWxT, j, M_Interventions[j].Get_Min_WorkloadxT(),
-		                 false);
-		InsertarOrdenado(M_Interventions_MinRxT, j, M_Interventions[j].Get_Min_RiskxT(),
-		                 false);
-		InsertarOrdenado(M_Interventions_MaxDifW, j,
-		                 M_Interventions[j].Get_Max_Workload() -
-		                     M_Interventions[j].Get_Min_Workload(),
-		                 false);
-		InsertarOrdenado(
-		    M_Interventions_MaxDifR, j,
-		    M_Interventions[j].Get_Max_Risk() - M_Interventions[j].Get_Min_Risk(), false);
+		InsertarOrdenado(M_Interventions_MinW, j, M_Interventions[j].Get_Min_Workload(),false);
+		InsertarOrdenado(M_Interventions_MinR, j, M_Interventions[j].Get_Min_Risk(),false);
+		InsertarOrdenado(M_Interventions_MinWxT, j, M_Interventions[j].Get_Min_WorkloadxT(), false);
+		InsertarOrdenado(M_Interventions_MinRxT, j, M_Interventions[j].Get_Min_RiskxT(), false);
+		InsertarOrdenado(M_Interventions_MaxDifW, j, M_Interventions[j].Get_Max_Workload()- M_Interventions[j].Get_Min_Workload(),false);
+		InsertarOrdenado(M_Interventions_MaxDifR, j, M_Interventions[j].Get_Max_Risk() - M_Interventions[j].Get_Min_Risk(),false);
 
-		InsertarOrdenado(M_Interventions_Min_WXR, j,
-		                 2 * M_N_Interventions - Pos(j, M_Interventions_MinR) -
-		                     Pos(j, M_Interventions_MinW),
-		                 false);
-		InsertarOrdenado(M_Interventions_Min_WtXRt, j,
-		                 2 * M_N_Interventions - Pos(j, M_Interventions_MinRxT) -
-		                     Pos(j, M_Interventions_MinWxT),
-		                 false);
+		InsertarOrdenado(M_Interventions_Min_WXR, j, 2 * M_N_Interventions - Pos(j, M_Interventions_MinR) - Pos(j, M_Interventions_MinW), false);
+		InsertarOrdenado(M_Interventions_Min_WtXRt, j, 2 * M_N_Interventions - Pos(j, M_Interventions_MinRxT) - Pos(j, M_Interventions_MinWxT), false);
+
 	}
-	sort(M_Interventions_Regret.begin(), M_Interventions_Regret.end(), [&](size_t i, size_t j) {
-		return M_Interventions[i].Get_Regret() > M_Interventions[j].Get_Regret();
-	});
+	sort(M_Interventions_Regret.begin(), M_Interventions_Regret.end(),
+		[&](size_t i, size_t j) { return M_Interventions[i].Get_Regret() > M_Interventions[j].Get_Regret(); });
 	sort(M_Interventions_Risk_Temp.begin(), M_Interventions_Risk_Temp.end(),
-	     [&](size_t i, size_t j) {
-		     return M_Interventions[i].Get_Min_Risk_Temp() >
-		            M_Interventions[j].Get_Min_Risk_Temp();
-	     });
+		[&](size_t i, size_t j) { return M_Interventions[i].Get_Min_Risk_Temp() > M_Interventions[j].Get_Min_Risk_Temp(); });
 
 	double val1 = __DBL_MAX__;
 	double val2 = __DBL_MAX__;
@@ -4848,8 +4537,8 @@ void Maintenance::VectoresOrdenados(void)
 
 	for (int i = 1; i < M_N_Interventions; i++)
 	{
-		M_Interventions[i].Limpiar();
-		if (M_Interventions_MinW[i].second < (val1 - __FLT_EPSILON__))
+		
+		if (M_Interventions_MinW[i].second < (val1-__FLT_EPSILON__))
 		{
 			val1 = M_Interventions_MinW[i].second;
 			M_Interventions_MinW_I.push_back(i);
@@ -4894,6 +4583,7 @@ void Maintenance::VectoresOrdenados(void)
 			val9 = M_Interventions_Exclusions[i].second;
 			M_Interventions_Exclusions_I.push_back(i);
 		}
+
 	}
 	M_Interventions_MinWxT_I.push_back(M_Interventions_MinWxT.size());
 	M_Interventions_MinRxT_I.push_back(M_Interventions_MinRxT.size());
@@ -4908,25 +4598,19 @@ void Maintenance::VectoresOrdenados(void)
 	M_Max_Riesgo = 0;
 	for (int j = 0; j < M_T; j++)
 	{
-		for (size_t i = 0; i < M_N_Interventions; i++)
+		for (size_t i=0; i < M_N_Interventions; i++)
 		{
 			if (M_Max_Riesgo < M_Interventions[i].Get_RiskC(j))
 				M_Max_Riesgo = M_Interventions[i].Get_RiskC(j);
 		}
+
 	}
-	for (size_t i = 0; i < M_N_Interventions; i++)
+	for (size_t i=0; i < M_N_Interventions; i++)
 	{
 		if (M_Max_Min_Riesgo < M_Interventions_MinR[i].second)
 			M_Max_Min_Riesgo = M_Interventions_MinR[i].second;
 	}
 	M_Max_Riesgo += 0.1;
-	//Menor valor primera parte f_obj
-	M_Min_fo = 0;
-	for (size_t i = 0; i < M_N_Interventions; i++) 
-	{
-		M_Min_fo+=M_Interventions[i].Get_Min_Risk();
-	}
-	M_Min_fo_temp = M_Min_fo;
 }
 void Maintenance::InsertarOrdenado(vector<pair<int,double >> &Vec, int pos, double val, bool decreciente)
 {
